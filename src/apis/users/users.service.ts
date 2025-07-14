@@ -4,6 +4,8 @@ import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
+import { LoginDto } from '../auth/dto/login.dto';
+
 import { User } from './schemas/user.schema';
 import { CreateUserBodyDto } from './dto/create-user.dto';
 
@@ -18,13 +20,41 @@ export class UsersService {
     return await bcrypt.hash(password, salt);
   }
 
+  async comparePassword({
+    password,
+    hashPassword,
+  }: {
+    password: string;
+    hashPassword: string;
+  }) {
+    return await bcrypt.compare(password, hashPassword);
+  }
+
   async create({ doc }: { doc: User }) {
     const newUser = new this.userModel(doc);
     return await newUser.save();
   }
 
+  async login({ email, password }: { email: string; password: string }) {
+    const userExists = await this.userModel.findOne({ email });
+    if (!userExists) {
+      return { success: false };
+    }
+
+    const isPasswordMatch = await this.comparePassword({
+      password,
+      hashPassword: userExists.password,
+    });
+    if (!isPasswordMatch) {
+      return { success: false };
+    }
+
+    return { success: true, userExists };
+  }
+
   // POST /v1/users/create
-  async createUser(body: CreateUserBodyDto) {
+  async createUser(user: LoginDto, body: CreateUserBodyDto) {
+    const { userId } = user;
     const { fullName, email, password, birthday, gender } = body;
 
     return await this.create({
@@ -34,7 +64,7 @@ export class UsersService {
         password: await this.hashPassword({ password }),
         birthday,
         gender,
-        createdBy: { userId: '', createdAt: new Date() },
+        createdBy: { userId, createdAt: new Date() },
       },
     });
   }
