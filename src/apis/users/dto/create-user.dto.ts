@@ -38,4 +38,8 @@ export class CreateUserBodyDto {
   @IsString()
   @IsNotEmpty()
   gender: string;
+
+  @IsString()
+  @IsNotEmpty()
+  roleId: string;
 }

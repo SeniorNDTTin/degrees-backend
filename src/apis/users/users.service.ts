@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
 import { LoginDto } from '../auth/dto/login.dto';
+import { RolesService } from '../roles/roles.service';
 
 import { User } from './schemas/user.schema';
 import { CreateUserBodyDto } from './dto/create-user.dto';
@@ -12,6 +13,7 @@ import { CreateUserBodyDto } from './dto/create-user.dto';
 @Injectable()
 export class UsersService {
   constructor(
+    private readonly rolesService: RolesService,
     @InjectModel(User.name) private readonly userModel: mongoose.Model<User>,
   ) {}
 
@@ -36,7 +38,10 @@ export class UsersService {
   }
 
   async login({ email, password }: { email: string; password: string }) {
-    const userExists = await this.userModel.findOne({ email });
+    const userExists = await this.userModel.findOne({
+      email,
+      isDeleted: false,
+    });
     if (!userExists) {
       return { success: false };
     }
@@ -55,7 +60,14 @@ export class UsersService {
   // POST /v1/users/create
   async createUser(user: LoginDto, body: CreateUserBodyDto) {
     const { userId } = user;
-    const { fullName, email, password, birthday, gender } = body;
+    const { fullName, email, password, birthday, gender, roleId } = body;
+
+    const roleExists = await this.rolesService.findOne({
+      filter: { _id: roleId },
+    });
+    if (!roleExists) {
+      throw new NotFoundException('Role id not found');
+    }
 
     return await this.create({
       doc: {
