@@ -8,6 +8,9 @@ import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
 
+//CRUD operations for certificates
+import { CertificatesModule } from './apis/certificates/certificates.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -23,6 +26,10 @@ import { RolesModule } from './apis/roles/roles.module';
     AuthModule,
     RolesModule,
     UsersModule,
+
+    // Importing the CertificatesModule for CRUD operations
+    CertificatesModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
