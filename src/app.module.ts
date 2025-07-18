@@ -9,6 +9,9 @@ import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
 import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
+//CRUD operations for certificates
+import { CertificatesModule } from './apis/certificates/certificates.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -24,6 +27,9 @@ import { VerifiersModule } from './apis/verifiers/verifiers.module';
     AuthModule,
     RolesModule,
     UsersModule,
+    
+    CertificatesModule,
+
     VerifiersModule,
   ],
   controllers: [AppController],
