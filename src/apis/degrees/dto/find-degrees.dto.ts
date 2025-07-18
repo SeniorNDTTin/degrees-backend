@@ -1,7 +1,8 @@
 import { Transform, Type } from 'class-transformer';
 import { IsNumber, IsObject, IsOptional, Max, Min } from 'class-validator';
 
-export class FindVerifiersQueryDto {
+export class FindDegreesQueryDto {
+  @IsOptional()
   @IsObject()
   @Transform(({ value }) => {
     if (!value) return {};
@@ -10,19 +11,18 @@ export class FindVerifiersQueryDto {
 
     return value as Record<string, any>;
   })
-  @IsOptional()
   filter?: Record<string, any>;
 
+  @IsOptional()
   @Min(1)
   @IsNumber()
   @Type(() => Number)
-  @IsOptional()
   page?: number;
 
-  @Max(100)
+  @IsOptional()
   @Min(1)
+  @Max(100)
   @IsNumber()
   @Type(() => Number)
-  @IsOptional()
   limit?: number;
 }

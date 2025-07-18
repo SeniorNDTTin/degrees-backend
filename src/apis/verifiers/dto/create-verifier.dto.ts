@@ -12,4 +12,4 @@ export class CreateVerifierDto {
   @IsEmail()
   @IsNotEmpty()
   verifierEmail: string;
-} 
+}

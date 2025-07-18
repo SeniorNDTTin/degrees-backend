@@ -13,4 +13,4 @@ export class Verifier extends Document {
   verifierEmail: string;
 }
 
-export const VerifierSchema = SchemaFactory.createForClass(Verifier); 
+export const VerifierSchema = SchemaFactory.createForClass(Verifier);

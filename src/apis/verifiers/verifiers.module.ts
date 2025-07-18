@@ -5,9 +5,13 @@ import { VerifiersService } from './verifiers.service';
 import { VerifiersController } from './verifiers.controller';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Verifier.name, schema: VerifierSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Verifier.name, schema: VerifierSchema },
+    ]),
+  ],
   controllers: [VerifiersController],
   providers: [VerifiersService],
   exports: [VerifiersService],
 })
-export class VerifiersModule {} 
+export class VerifiersModule {}

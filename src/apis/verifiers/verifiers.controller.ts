@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, NotFoundException, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  NotFoundException,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { VerifiersService } from './verifiers.service';
 import { CreateVerifierDto } from './dto/create-verifier.dto';
 import { UpdateVerifierDto } from './dto/update-verifier.dto';
@@ -13,7 +24,10 @@ export class VerifiersController {
 
   @Post('create')
   @UseGuards(JwtAuthGuard)
-  async create(@User() user: LoginDto, @Body() createVerifierDto: CreateVerifierDto) {
+  async create(
+    @User() user: LoginDto,
+    @Body() createVerifierDto: CreateVerifierDto,
+  ) {
     console.log('Received body:', createVerifierDto);
     return this.verifiersService.create(createVerifierDto);
   }
@@ -57,4 +71,4 @@ export class VerifiersController {
     }
     return {};
   }
-} 
+}
