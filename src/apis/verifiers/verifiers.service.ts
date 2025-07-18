@@ -1,24 +1,42 @@
+import mongoose from 'mongoose';
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model, RootFilterQuery } from 'mongoose';
-import { Verifier } from './schemas/verifier.schema';
-import { CreateVerifierDto } from './dto/create-verifier.dto';
-import { UpdateVerifierDto } from './dto/update-verifier.dto';
-import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
+
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
+
+import { LoginDto } from '../auth/dto/login.dto';
+
+import {
+  UpdateVerifierBodyDto,
+  UpdateVerifierParamDto,
+} from './dto/update-verifier.dto';
+import { Verifier } from './schemas/verifier.schema';
+import { CreateVerifierBodyDto } from './dto/create-verfier.dto';
+import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
+import { DeleteVerifierParamDto } from './dto/delete-verifier.dto';
+import { FindVerifierByIdParamDto } from './dto/find-role-by-id.dto';
 
 @Injectable()
 export class VerifiersService {
   constructor(
-    @InjectModel(Verifier.name) private verifierModel: Model<Verifier>,
+    @InjectModel(Verifier.name)
+    private readonly verifierModel: mongoose.Model<Verifier>,
   ) {}
 
-  async create(createVerifierDto: CreateVerifierDto): Promise<Verifier> {
-    return this.verifierModel.create(createVerifierDto);
+  async create({ doc }: { doc: Verifier }) {
+    const newVerifier = new this.verifierModel(doc);
+    return await newVerifier.save();
   }
 
-  async countDocuments({ filter }: { filter: RootFilterQuery<Verifier> }) {
+  async countDocuments({
+    filter,
+  }: {
+    filter: mongoose.RootFilterQuery<Verifier>;
+  }) {
+    filter['isDeleted'] = false;
+
     return await this.verifierModel.countDocuments(filter);
   }
 
@@ -28,11 +46,13 @@ export class VerifiersService {
     skip,
     limit,
   }: {
-    filter: RootFilterQuery<Verifier>;
+    filter: mongoose.RootFilterQuery<Verifier>;
     sort?: { [key: string]: mongoose.SortOrder };
     skip?: number;
     limit?: number;
   }) {
+    filter['isDeleted'] = false;
+
     return await this.verifierModel
       .find(filter)
       .sort(sort)
@@ -40,26 +60,105 @@ export class VerifiersService {
       .limit(limit || 20);
   }
 
-  async findAll(query: FindVerifiersQueryDto) {
+  async findOne({ filter }: { filter: mongoose.RootFilterQuery<Verifier> }) {
+    filter['isDeleted'] = false;
+
+    return await this.verifierModel.findOne(filter);
+  }
+
+  async findOneAndUpdate({
+    filter,
+    update,
+  }: {
+    filter: mongoose.RootFilterQuery<Verifier>;
+    update: mongoose.UpdateQuery<Verifier>;
+  }) {
+    filter['isDeleted'] = false;
+
+    return await this.verifierModel.findOneAndUpdate(filter, update);
+  }
+
+  // POST /v1/verifiers/create
+  async createVerifier(user: LoginDto, body: CreateVerifierBodyDto) {
+    const { userId } = user;
+    const { verifierName, oragranization, verifierEmail } = body;
+
+    return await this.create({
+      doc: {
+        verifierName,
+        oragranization,
+        verifierEmail,
+        createdBy: { userId, createdAt: new Date() },
+      },
+    });
+  }
+
+  // PATCH /v1/verifier/update/:id
+  async updateVerifier(
+    user: LoginDto,
+    param: UpdateVerifierParamDto,
+    body: UpdateVerifierBodyDto,
+  ) {
+    const { userId } = user;
+    const { id } = param;
+    const { verifierName, oragranization, verifierEmail } = body;
+
+    const verifierExists = await this.findOneAndUpdate({
+      filter: { _id: id },
+      update: {
+        verifierName,
+        oragranization,
+        verifierEmail,
+        $push: { updatedBy: { userId, updatedAt: new Date() } },
+      },
+    });
+    if (!verifierExists) {
+      throw new NotFoundException('Verifier id not found');
+    }
+
+    return verifierExists;
+  }
+
+  // DELETE /v1/verifier/delete/:id
+  async deleteVerifier(user: LoginDto, param: DeleteVerifierParamDto) {
+    const { userId } = user;
+    const { id } = param;
+
+    const verifierExists = await this.findOneAndUpdate({
+      filter: { _id: id },
+      update: { isDeleted: true, deletedBy: { userId, deletedAt: new Date() } },
+    });
+    if (!verifierExists) {
+      throw new NotFoundException('Verifier id not found');
+    }
+
+    return {};
+  }
+
+  // GET /v1/verifiers/find?filter?={verifierName?, oragranization?, verifierEmail?, sortBy?, sortOrder?}&page?&limit?
+  async findVerifiers(query: FindVerifiersQueryDto) {
     const { filter, page, limit } = query;
     const filterOptions: {
       verifierName?: RegExp;
-      organization?: RegExp;
+      oragranization?: RegExp;
       verifierEmail?: RegExp;
     } = {};
     let sort = {};
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { verifierName, organization, verifierEmail, sortBy, sortOrder } =
+      const { verifierName, oragranization, verifierEmail, sortBy, sortOrder } =
         filter;
 
       if (verifierName) {
         filterOptions.verifierName = new RegExp(verifierName as string, 'i');
       }
 
-      if (organization) {
-        filterOptions.organization = new RegExp(organization as string, 'i');
+      if (oragranization) {
+        filterOptions.oragranization = new RegExp(
+          oragranization as string,
+          'i',
+        );
       }
 
       if (verifierEmail) {
@@ -69,7 +168,7 @@ export class VerifiersService {
       sort = sortHelper(sortBy as string, sortOrder as string);
     }
 
-    const [total, verifiers] = await Promise.all([
+    const [total, roles] = await Promise.all([
       this.countDocuments({ filter: filterOptions }),
       this.find({
         filter: filterOptions,
@@ -78,31 +177,25 @@ export class VerifiersService {
         limit: pagination.limit,
       }),
     ]);
-
     return {
-      verifiers: {
+      roles: {
         total,
         page,
         limit,
-        items: verifiers,
+        items: roles,
       },
     };
   }
 
-  async findById(id: string): Promise<Verifier | null> {
-    return this.verifierModel.findById(id).exec();
-  }
+  // GET /v1/verifiers/find/:id
+  async findRoleById(param: FindVerifierByIdParamDto) {
+    const { id } = param;
 
-  async update(
-    id: string,
-    updateVerifierDto: UpdateVerifierDto,
-  ): Promise<Verifier | null> {
-    return this.verifierModel
-      .findByIdAndUpdate(id, updateVerifierDto, { new: true })
-      .exec();
-  }
+    const verifierExists = await this.findOne({ filter: { _id: id } });
+    if (!verifierExists) {
+      throw new NotFoundException('Verifier id not found');
+    }
 
-  async delete(id: string): Promise<Verifier | null> {
-    return this.verifierModel.findByIdAndDelete(id).exec();
+    return verifierExists;
   }
 }

@@ -28,7 +28,7 @@ import { CertificatesModule } from './apis/certificates/certificates.module';
     AuthModule,
     RolesModule,
     UsersModule,
-    
+
     CertificatesModule,
 
     VerifiersModule,

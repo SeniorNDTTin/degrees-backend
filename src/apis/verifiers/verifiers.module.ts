@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Verifier, VerifierSchema } from './schemas/verifier.schema';
+
 import { VerifiersService } from './verifiers.service';
 import { VerifiersController } from './verifiers.controller';
+import { Verifier, VerifierSchema } from './schemas/verifier.schema';
 
 @Module({
   imports: [
@@ -14,4 +15,4 @@ import { VerifiersController } from './verifiers.controller';
   providers: [VerifiersService],
   exports: [VerifiersService],
 })
-export class VerifiersModule {}
+export class VerifierModule {}

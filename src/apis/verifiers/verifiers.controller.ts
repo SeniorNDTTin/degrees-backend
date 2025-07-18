@@ -1,74 +1,70 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  NotFoundException,
-  UseGuards,
+  Get,
+  Param,
+  Patch,
+  Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { VerifiersService } from './verifiers.service';
-import { CreateVerifierDto } from './dto/create-verifier.dto';
-import { UpdateVerifierDto } from './dto/update-verifier.dto';
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { User } from '../users/decorators/user.decorator';
-import { LoginDto } from '../auth/dto/login.dto';
-import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
 
-@Controller('verifiers')
+import { LoginDto } from '../auth/dto/login.dto';
+import { User } from '../users/decorators/user.decorator';
+import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+
+import {
+  UpdateVerifierBodyDto,
+  UpdateVerifierParamDto,
+} from './dto/update-verifier.dto';
+import { VerifiersService } from './verifiers.service';
+import { CreateVerifierBodyDto } from './dto/create-verfier.dto';
+import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
+import { DeleteVerifierParamDto } from './dto/delete-verifier.dto';
+import { FindVerifierByIdParamDto } from './dto/find-role-by-id.dto';
+
+@Controller({
+  path: '/verifiers',
+  version: '1',
+})
 export class VerifiersController {
   constructor(private readonly verifiersService: VerifiersService) {}
 
-  @Post('create')
+  @Post('/create')
   @UseGuards(JwtAuthGuard)
-  async create(
+  async createVerifier(
     @User() user: LoginDto,
-    @Body() createVerifierDto: CreateVerifierDto,
+    @Body() body: CreateVerifierBodyDto,
   ) {
-    console.log('Received body:', createVerifierDto);
-    return this.verifiersService.create(createVerifierDto);
+    return await this.verifiersService.createVerifier(user, body);
   }
 
-  @Get('find')
+  @Patch('/update/:id')
   @UseGuards(JwtAuthGuard)
-  async findAll(@User() user: LoginDto, @Query() query: FindVerifiersQueryDto) {
-    return this.verifiersService.findAll(query);
-  }
-
-  @Get('find/:id')
-  @UseGuards(JwtAuthGuard)
-  async findById(@User() user: LoginDto, @Param('id') id: string) {
-    const verifier = await this.verifiersService.findById(id);
-    if (!verifier) {
-      throw new NotFoundException(`Verifier with ID ${id} not found`);
-    }
-    return verifier;
-  }
-
-  @Patch('update/:id')
-  @UseGuards(JwtAuthGuard)
-  async update(
+  async updateVerifier(
     @User() user: LoginDto,
-    @Param('id') id: string,
-    @Body() updateVerifierDto: UpdateVerifierDto,
+    @Param() param: UpdateVerifierParamDto,
+    @Body() body: UpdateVerifierBodyDto,
   ) {
-    const verifier = await this.verifiersService.update(id, updateVerifierDto);
-    if (!verifier) {
-      throw new NotFoundException(`Verifier with ID ${id} not found`);
-    }
-    return verifier;
+    return await this.verifiersService.updateVerifier(user, param, body);
   }
 
-  @Delete('delete/:id')
+  @Delete('/delete/:id')
   @UseGuards(JwtAuthGuard)
-  async delete(@User() user: LoginDto, @Param('id') id: string) {
-    const verifier = await this.verifiersService.delete(id);
-    if (!verifier) {
-      throw new NotFoundException(`Verifier with ID ${id} not found`);
-    }
-    return {};
+  async deleteVerifer(@User() user: LoginDto, param: DeleteVerifierParamDto) {
+    return await this.verifiersService.deleteVerifier(user, param);
+  }
+
+  @Get('/find')
+  @UseGuards(JwtAuthGuard)
+  async findVerifiers(@Query() query: FindVerifiersQueryDto) {
+    return await this.verifiersService.findVerifiers(query);
+  }
+
+  @Get('/find/:id')
+  @UseGuards(JwtAuthGuard)
+  async findRoleById(@Param() param: FindVerifierByIdParamDto) {
+    return await this.verifiersService.findRoleById(param);
   }
 }
