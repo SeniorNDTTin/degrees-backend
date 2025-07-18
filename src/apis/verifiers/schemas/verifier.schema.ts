@@ -4,9 +4,6 @@ import { Document } from 'mongoose';
 @Schema()
 export class Verifier extends Document {
   @Prop({ required: true })
-  verifierID: string;
-
-  @Prop({ required: true })
   verifierName: string;
 
   @Prop({ required: true })

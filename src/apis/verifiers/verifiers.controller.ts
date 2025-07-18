@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, NotFoundException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, NotFoundException, UseGuards, Query } from '@nestjs/common';
 import { VerifiersService } from './verifiers.service';
 import { CreateVerifierDto } from './dto/create-verifier.dto';
 import { UpdateVerifierDto } from './dto/update-verifier.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { User } from '../users/decorators/user.decorator';
 import { LoginDto } from '../auth/dto/login.dto';
+import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
 
 @Controller('verifiers')
 export class VerifiersController {
@@ -19,16 +20,16 @@ export class VerifiersController {
 
   @Get('find')
   @UseGuards(JwtAuthGuard)
-  async findAll(@User() user: LoginDto) {
-    return this.verifiersService.findAll();
+  async findAll(@User() user: LoginDto, @Query() query: FindVerifiersQueryDto) {
+    return this.verifiersService.findAll(query);
   }
 
-  @Get('find/:verifierID')
+  @Get('find/:id')
   @UseGuards(JwtAuthGuard)
-  async findById(@User() user: LoginDto, @Param('verifierID') verifierID: string) {
-    const verifier = await this.verifiersService.findById(verifierID);
+  async findById(@User() user: LoginDto, @Param('id') id: string) {
+    const verifier = await this.verifiersService.findById(id);
     if (!verifier) {
-      throw new NotFoundException(`Verifier with ID ${verifierID} not found`);
+      throw new NotFoundException(`Verifier with ID ${id} not found`);
     }
     return {
       statusCode: 200,
@@ -37,16 +38,16 @@ export class VerifiersController {
     };
   }
 
-  @Patch('update/:verifierID')
+  @Patch('update/:id')
   @UseGuards(JwtAuthGuard)
   async update(
     @User() user: LoginDto,
-    @Param('verifierID') verifierID: string,
+    @Param('id') id: string,
     @Body() updateVerifierDto: UpdateVerifierDto,
   ) {
-    const verifier = await this.verifiersService.update(verifierID, updateVerifierDto);
+    const verifier = await this.verifiersService.update(id, updateVerifierDto);
     if (!verifier) {
-      throw new NotFoundException(`Verifier with ID ${verifierID} not found`);
+      throw new NotFoundException(`Verifier with ID ${id} not found`);
     }
     return {
       statusCode: 200,
@@ -55,12 +56,12 @@ export class VerifiersController {
     };
   }
 
-  @Delete('delete/:verifierID')
+  @Delete('delete/:id')
   @UseGuards(JwtAuthGuard)
-  async delete(@User() user: LoginDto, @Param('verifierID') verifierID: string) {
-    const verifier = await this.verifiersService.delete(verifierID);
+  async delete(@User() user: LoginDto, @Param('id') id: string) {
+    const verifier = await this.verifiersService.delete(id);
     if (!verifier) {
-      throw new NotFoundException(`Verifier with ID ${verifierID} not found`);
+      throw new NotFoundException(`Verifier with ID ${id} not found`);
     }
     return {
       statusCode: 200,
