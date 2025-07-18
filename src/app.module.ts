@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
+import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
 //CRUD operations for certificates
 import { CertificatesModule } from './apis/certificates/certificates.module';
@@ -26,10 +27,10 @@ import { CertificatesModule } from './apis/certificates/certificates.module';
     AuthModule,
     RolesModule,
     UsersModule,
-
-    // Importing the CertificatesModule for CRUD operations
+    
     CertificatesModule,
 
+    VerifiersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
