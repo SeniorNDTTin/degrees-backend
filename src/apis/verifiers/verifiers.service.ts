@@ -51,7 +51,8 @@ export class VerifiersService {
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { verifierName, organization, verifierEmail, sortBy, sortOrder } = filter;
+      const { verifierName, organization, verifierEmail, sortBy, sortOrder } =
+        filter;
 
       if (verifierName) {
         filterOptions.verifierName = new RegExp(verifierName as string, 'i');
@@ -92,11 +93,16 @@ export class VerifiersService {
     return this.verifierModel.findById(id).exec();
   }
 
-  async update(id: string, updateVerifierDto: UpdateVerifierDto): Promise<Verifier | null> {
-    return this.verifierModel.findByIdAndUpdate(id, updateVerifierDto, { new: true }).exec();
+  async update(
+    id: string,
+    updateVerifierDto: UpdateVerifierDto,
+  ): Promise<Verifier | null> {
+    return this.verifierModel
+      .findByIdAndUpdate(id, updateVerifierDto, { new: true })
+      .exec();
   }
 
   async delete(id: string): Promise<Verifier | null> {
     return this.verifierModel.findByIdAndDelete(id).exec();
   }
-} 
+}

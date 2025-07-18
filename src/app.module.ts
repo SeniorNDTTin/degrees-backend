@@ -8,6 +8,7 @@ import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
 import { VerifiersModule } from './apis/verifiers/verifiers.module';
+import { DegreesModule } from './apis/degrees/degrees.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { VerifiersModule } from './apis/verifiers/verifiers.module';
     RolesModule,
     UsersModule,
     VerifiersModule,
+    DegreesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

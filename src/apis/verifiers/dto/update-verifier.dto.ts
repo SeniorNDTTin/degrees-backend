@@ -12,4 +12,4 @@ export class UpdateVerifierDto {
   @IsEmail()
   @IsOptional()
   verifierEmail?: string;
-} 
+}
