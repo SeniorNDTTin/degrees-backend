@@ -12,12 +12,16 @@ import { FindCertificatesQueryDto } from './dto/find-certificates.dto';
 import { CreateCertificateBodyDto } from './dto/create-certificate.dto';
 import { DeleteCertificateParamDto } from './dto/delete-certificate.dto';
 import { FindCertificateByIdParamDto } from './dto/find-certificate-by-id.dto';
-import { UpdateCertificateBodyDto, UpdateCertificateParamDto } from './dto/update-certificate.dto';
+import {
+  UpdateCertificateBodyDto,
+  UpdateCertificateParamDto,
+} from './dto/update-certificate.dto';
 
 @Injectable()
 export class CertificatesService {
   constructor(
-    @InjectModel(Certificate.name) private readonly certificateModel: mongoose.Model<Certificate>,
+    @InjectModel(Certificate.name)
+    private readonly certificateModel: mongoose.Model<Certificate>,
   ) {}
 
   async create({ doc }: { doc: Certificate }) {
@@ -134,15 +138,19 @@ export class CertificatesService {
     if (title !== undefined) updateFields.title = title;
     if (score !== undefined) updateFields.score = score;
     if (scoreDetails !== undefined) updateFields.scoreDetails = scoreDetails;
-    if (issuedDate !== undefined) updateFields.issuedDate = new Date(issuedDate);
+    if (issuedDate !== undefined)
+      updateFields.issuedDate = new Date(issuedDate);
     if (certHash !== undefined) updateFields.certHash = certHash;
-    if (blockchainTxID !== undefined) updateFields.blockchainTxID = blockchainTxID;
+    if (blockchainTxID !== undefined)
+      updateFields.blockchainTxID = blockchainTxID;
     if (status !== undefined) updateFields.status = status;
     if (studentEmail !== undefined) updateFields.studentEmail = studentEmail;
     if (issuerID !== undefined) updateFields.issuerID = issuerID;
     if (issuerType !== undefined) updateFields.issuerType = issuerType;
-    if (studentSignature !== undefined) updateFields.studentSignature = studentSignature;
-    if (issuerSignature !== undefined) updateFields.issuerSignature = issuerSignature;
+    if (studentSignature !== undefined)
+      updateFields.studentSignature = studentSignature;
+    if (issuerSignature !== undefined)
+      updateFields.issuerSignature = issuerSignature;
 
     const certificateExists = await this.findOneAndUpdate({
       filter: { _id: id },
@@ -189,7 +197,16 @@ export class CertificatesService {
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { certType, title, status, studentEmail, issuerID, issuerType, sortBy, sortOrder } = filter;
+      const {
+        certType,
+        title,
+        status,
+        studentEmail,
+        issuerID,
+        issuerType,
+        sortBy,
+        sortOrder,
+      } = filter;
 
       if (certType) {
         filterOptions.certType = new RegExp(certType as string, 'i');

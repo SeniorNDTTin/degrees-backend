@@ -1,4 +1,10 @@
-import { IsNumber, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsDateString,
+} from 'class-validator';
 
 export class UpdateCertificateParamDto {
   @IsNotEmpty()

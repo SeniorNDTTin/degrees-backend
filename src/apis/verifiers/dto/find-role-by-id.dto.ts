@@ -1,6 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 
-export class DeleteVerifierParamDto {
+export class FindVerifierByIdParamDto {
   @IsNotEmpty()
   id: string;
 }

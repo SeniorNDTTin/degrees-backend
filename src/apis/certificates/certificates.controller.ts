@@ -19,7 +19,10 @@ import { FindCertificatesQueryDto } from './dto/find-certificates.dto';
 import { CreateCertificateBodyDto } from './dto/create-certificate.dto';
 import { DeleteCertificateParamDto } from './dto/delete-certificate.dto';
 import { FindCertificateByIdParamDto } from './dto/find-certificate-by-id.dto';
-import { UpdateCertificateBodyDto, UpdateCertificateParamDto } from './dto/update-certificate.dto';
+import {
+  UpdateCertificateBodyDto,
+  UpdateCertificateParamDto,
+} from './dto/update-certificate.dto';
 
 @Controller({
   path: '/certificates',
@@ -30,7 +33,10 @@ export class CertificatesController {
 
   @Post('/create')
   @UseGuards(JwtAuthGuard)
-  async createCertificate(@User() user: LoginDto, @Body() body: CreateCertificateBodyDto) {
+  async createCertificate(
+    @User() user: LoginDto,
+    @Body() body: CreateCertificateBodyDto,
+  ) {
     return await this.certificatesService.createCertificate(user, body);
   }
 
@@ -46,7 +52,10 @@ export class CertificatesController {
 
   @Delete('/delete/:id')
   @UseGuards(JwtAuthGuard)
-  async deleteCertificate(@User() user: LoginDto, @Param() param: DeleteCertificateParamDto) {
+  async deleteCertificate(
+    @User() user: LoginDto,
+    @Param() param: DeleteCertificateParamDto,
+  ) {
     return await this.certificatesService.deleteCertificate(user, param);
   }
 

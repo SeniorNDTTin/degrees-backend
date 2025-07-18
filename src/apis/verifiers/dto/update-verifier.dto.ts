@@ -1,15 +1,20 @@
-import { IsString, IsEmail, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-export class UpdateVerifierDto {
+export class UpdateVerifierParamDto {
+  @IsNotEmpty()
+  id: string;
+}
+
+export class UpdateVerifierBodyDto {
   @IsString()
   @IsOptional()
   verifierName?: string;
 
   @IsString()
   @IsOptional()
-  organization?: string;
+  oragranization?: string;
 
-  @IsEmail()
+  @IsString()
   @IsOptional()
   verifierEmail?: string;
 }
