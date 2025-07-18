@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
+import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RolesModule } from './apis/roles/roles.module';
     AuthModule,
     RolesModule,
     UsersModule,
+    VerifiersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
