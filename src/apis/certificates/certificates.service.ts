@@ -70,14 +70,37 @@ export class CertificatesService {
 
   async createCertificate(user: LoginDto, body: CreateCertificateBodyDto) {
     const { userId } = user;
-    const { certType, title, score, scoreDetails } = body;
+    const {
+      certType,
+      title,
+      score,
+      scoreDetails,
+      issuedDate,
+      certHash,
+      blockchainTxID,
+      status,
+      studentEmail,
+      issuerID,
+      issuerType,
+      studentSignature,
+      issuerSignature,
+    } = body;
 
     const doc: Certificate = {
-        certType,
-        title,
-        score,
-        scoreDetails: scoreDetails || '',
-        createdBy: { userId, createdAt: new Date() },
+      certType,
+      title,
+      score,
+      scoreDetails: scoreDetails || '',
+      issuedDate: new Date(issuedDate),
+      certHash,
+      blockchainTxID,
+      status,
+      studentEmail,
+      issuerID,
+      issuerType,
+      studentSignature,
+      issuerSignature,
+      createdBy: { userId, createdAt: new Date() },
     };
     return this.create({ doc });
   }
@@ -89,7 +112,21 @@ export class CertificatesService {
   ) {
     const { userId } = user;
     const { id } = param;
-    const { certType, title, score, scoreDetails } = body;
+    const {
+      certType,
+      title,
+      score,
+      scoreDetails,
+      issuedDate,
+      certHash,
+      blockchainTxID,
+      status,
+      studentEmail,
+      issuerID,
+      issuerType,
+      studentSignature,
+      issuerSignature,
+    } = body;
 
     // Filter out undefined fields and ensure type safety
     const updateFields: Partial<Certificate> = {};
@@ -97,6 +134,15 @@ export class CertificatesService {
     if (title !== undefined) updateFields.title = title;
     if (score !== undefined) updateFields.score = score;
     if (scoreDetails !== undefined) updateFields.scoreDetails = scoreDetails;
+    if (issuedDate !== undefined) updateFields.issuedDate = new Date(issuedDate);
+    if (certHash !== undefined) updateFields.certHash = certHash;
+    if (blockchainTxID !== undefined) updateFields.blockchainTxID = blockchainTxID;
+    if (status !== undefined) updateFields.status = status;
+    if (studentEmail !== undefined) updateFields.studentEmail = studentEmail;
+    if (issuerID !== undefined) updateFields.issuerID = issuerID;
+    if (issuerType !== undefined) updateFields.issuerType = issuerType;
+    if (studentSignature !== undefined) updateFields.studentSignature = studentSignature;
+    if (issuerSignature !== undefined) updateFields.issuerSignature = issuerSignature;
 
     const certificateExists = await this.findOneAndUpdate({
       filter: { _id: id },
@@ -134,12 +180,16 @@ export class CertificatesService {
     const filterOptions: {
       certType?: RegExp;
       title?: RegExp;
+      status?: RegExp;
+      studentEmail?: RegExp;
+      issuerID?: RegExp;
+      issuerType?: RegExp;
     } = {};
     let sort = {};
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { certType, title, sortBy, sortOrder } = filter;
+      const { certType, title, status, studentEmail, issuerID, issuerType, sortBy, sortOrder } = filter;
 
       if (certType) {
         filterOptions.certType = new RegExp(certType as string, 'i');
@@ -147,6 +197,22 @@ export class CertificatesService {
 
       if (title) {
         filterOptions.title = new RegExp(title as string, 'i');
+      }
+
+      if (status) {
+        filterOptions.status = new RegExp(status as string, 'i');
+      }
+
+      if (studentEmail) {
+        filterOptions.studentEmail = new RegExp(studentEmail as string, 'i');
+      }
+
+      if (issuerID) {
+        filterOptions.issuerID = new RegExp(issuerID as string, 'i');
+      }
+
+      if (issuerType) {
+        filterOptions.issuerType = new RegExp(issuerType as string, 'i');
       }
 
       sort = sortHelper(sortBy as string, sortOrder as string);

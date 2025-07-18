@@ -21,6 +21,33 @@ export class Certificate {
   @Prop({ type: String })
   scoreDetails: string;
 
+  @Prop({ type: Date, required: true })
+  issuedDate: Date;
+
+  @Prop({ type: String, required: true })
+  certHash: string;
+
+  @Prop({ type: String, required: true })
+  blockchainTxID: string;
+
+  @Prop({ type: String, required: true })
+  status: string;
+
+  @Prop({ type: String, required: true })
+  studentEmail: string;
+
+  @Prop({ type: String, required: true })
+  issuerID: string;
+
+  @Prop({ type: String, required: true })
+  issuerType: string;
+
+  @Prop({ type: String, required: true })
+  studentSignature: string;
+
+  @Prop({ type: String, required: true })
+  issuerSignature: string;
+
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };
 
