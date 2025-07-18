@@ -66,7 +66,7 @@ export class VerifiersController {
     return {
       statusCode: 200,
       message: 'Success',
-      data: verifier
+      data: {}
     };
   }
 } 
