@@ -31,11 +31,7 @@ export class VerifiersController {
     if (!verifier) {
       throw new NotFoundException(`Verifier with ID ${id} not found`);
     }
-    return {
-      statusCode: 200,
-      message: 'Success',
-      data: verifier
-    };
+    return verifier;
   }
 
   @Patch('update/:id')
@@ -49,11 +45,7 @@ export class VerifiersController {
     if (!verifier) {
       throw new NotFoundException(`Verifier with ID ${id} not found`);
     }
-    return {
-      statusCode: 200,
-      message: 'Success',
-      data: verifier
-    };
+    return verifier;
   }
 
   @Delete('delete/:id')
@@ -63,10 +55,6 @@ export class VerifiersController {
     if (!verifier) {
       throw new NotFoundException(`Verifier with ID ${id} not found`);
     }
-    return {
-      statusCode: 200,
-      message: 'Success',
-      data: {}
-    };
+    return {};
   }
 } 
