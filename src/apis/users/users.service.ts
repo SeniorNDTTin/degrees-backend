@@ -37,6 +37,12 @@ export class UsersService {
     return await newUser.save();
   }
 
+  async findOne({ filter }: { filter: mongoose.RootFilterQuery<User> }) {
+    filter['isDeleted'] = false;
+
+    return await this.userModel.findOne(filter);
+  }
+
   async login({ email, password }: { email: string; password: string }) {
     const userExists = await this.userModel.findOne({
       email,
