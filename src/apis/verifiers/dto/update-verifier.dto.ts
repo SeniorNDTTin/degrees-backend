@@ -12,7 +12,7 @@ export class UpdateVerifierBodyDto {
 
   @IsString()
   @IsOptional()
-  oragranization?: string;
+  organization?: string;
 
   @IsString()
   @IsOptional()
