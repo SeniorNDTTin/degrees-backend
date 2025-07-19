@@ -10,9 +10,6 @@ export type CertificateDocument = mongoose.HydratedDocument<Certificate>;
 })
 export class Certificate {
   @Prop({ type: String, required: true })
-  certType: string;
-
-  @Prop({ type: String, required: true })
   title: string;
 
   @Prop({ type: Number, required: true })
@@ -38,9 +35,6 @@ export class Certificate {
 
   @Prop({ type: String, required: true })
   issuerID: string;
-
-  @Prop({ type: String, required: true })
-  issuerType: string;
 
   @Prop({ type: String, required: true })
   studentSignature: string;

@@ -15,4 +15,4 @@ import { Verifier, VerifierSchema } from './schemas/verifier.schema';
   providers: [VerifiersService],
   exports: [VerifiersService],
 })
-export class VerifierModule {}
+export class VerifiersModule {}

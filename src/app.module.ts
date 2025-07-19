@@ -7,11 +7,12 @@ import { AppController } from './app.controller';
 import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
-import { VerifiersModule } from './apis/verifiers/verifiers.module';
+
 import { DegreesModule } from './apis/degrees/degrees.module';
 
 //CRUD operations for certificates
 import { CertificatesModule } from './apis/certificates/certificates.module';
+import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
 @Module({
   imports: [

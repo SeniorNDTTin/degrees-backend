@@ -9,10 +9,6 @@ import {
 export class CreateCertificateBodyDto {
   @IsString()
   @IsNotEmpty()
-  certType: string;
-
-  @IsString()
-  @IsNotEmpty()
   title: string;
 
   @IsNumber()
@@ -25,7 +21,7 @@ export class CreateCertificateBodyDto {
 
   @IsDateString()
   @IsNotEmpty()
-  issuedDate: string;
+  issuedDate: Date;
 
   @IsString()
   @IsNotEmpty()
@@ -46,16 +42,4 @@ export class CreateCertificateBodyDto {
   @IsString()
   @IsNotEmpty()
   issuerID: string;
-
-  @IsString()
-  @IsNotEmpty()
-  issuerType: string;
-
-  @IsString()
-  @IsNotEmpty()
-  studentSignature: string;
-
-  @IsString()
-  @IsNotEmpty()
-  issuerSignature: string;
 }

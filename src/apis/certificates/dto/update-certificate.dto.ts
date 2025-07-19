@@ -14,10 +14,6 @@ export class UpdateCertificateParamDto {
 export class UpdateCertificateBodyDto {
   @IsString()
   @IsOptional()
-  certType?: string;
-
-  @IsString()
-  @IsOptional()
   title?: string;
 
   @IsNumber()
@@ -30,7 +26,7 @@ export class UpdateCertificateBodyDto {
 
   @IsDateString()
   @IsOptional()
-  issuedDate?: string;
+  issuedDate?: Date;
 
   @IsString()
   @IsOptional()
@@ -51,16 +47,4 @@ export class UpdateCertificateBodyDto {
   @IsString()
   @IsOptional()
   issuerID?: string;
-
-  @IsString()
-  @IsOptional()
-  issuerType?: string;
-
-  @IsString()
-  @IsOptional()
-  studentSignature?: string;
-
-  @IsString()
-  @IsOptional()
-  issuerSignature?: string;
 }

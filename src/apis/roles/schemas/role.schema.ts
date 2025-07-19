@@ -2,51 +2,21 @@ import mongoose from 'mongoose';
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type CertificateDocument = mongoose.HydratedDocument<Certificate>;
+export type RoleDocument = mongoose.HydratedDocument<Role>;
 
 @Schema({
-  collection: 'certificates',
+  collection: 'roles',
   timestamps: true,
 })
-export class Certificate {
-  @Prop({ type: String, required: true })
-  certType: string;
+export class Role {
+  @Prop({ type: String, unique: true, required: true })
+  name: string;
 
   @Prop({ type: String, required: true })
-  title: string;
+  description: string;
 
-  @Prop({ type: Number, required: true })
-  score: number;
-
-  @Prop({ type: String })
-  scoreDetails: string;
-
-  @Prop({ type: Date, required: true })
-  issuedDate: Date;
-
-  @Prop({ type: String, required: true })
-  certHash: string;
-
-  @Prop({ type: String, required: true })
-  blockchainTxID: string;
-
-  @Prop({ type: String, required: true })
-  status: string;
-
-  @Prop({ type: String, required: true })
-  studentEmail: string;
-
-  @Prop({ type: String, required: true })
-  issuerID: string;
-
-  @Prop({ type: String, required: true })
-  issuerType: string;
-
-  @Prop({ type: String, required: true })
-  studentSignature: string;
-
-  @Prop({ type: String, required: true })
-  issuerSignature: string;
+  @Prop({ type: [String], required: true })
+  permissions: string[];
 
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };
@@ -61,4 +31,4 @@ export class Certificate {
   deletedBy?: { userId: string; deletedAt: Date };
 }
 
-export const CertificateSchema = SchemaFactory.createForClass(Certificate);
+export const RoleSchema = SchemaFactory.createForClass(Role);
