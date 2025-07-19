@@ -90,8 +90,14 @@ export class CertificatesService {
       issuerID,
     } = body;
 
-    const studentSignature = this.jwtService.sign({ userId }, { privateKey: this.configService.get<string>('SIGNATURE_SECRET') });
-    const issuerSignature = this.jwtService.sign({ issuerID }, { privateKey: this.configService.get<string>('SIGNATURE_SECRET') });
+    const studentSignature = this.jwtService.sign(
+      { userId },
+      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+    );
+    const issuerSignature = this.jwtService.sign(
+      { issuerID },
+      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+    );
 
     const doc: Certificate = {
       title,
@@ -186,14 +192,8 @@ export class CertificatesService {
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const {
-        title,
-        status,
-        studentEmail,
-        issuerID,
-        sortBy,
-        sortOrder,
-      } = filter;
+      const { title, status, studentEmail, issuerID, sortBy, sortOrder } =
+        filter;
 
       if (title) {
         filterOptions.title = new RegExp(title as string, 'i');

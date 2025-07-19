@@ -155,10 +155,7 @@ export class VerifiersService {
       }
 
       if (organization) {
-        filterOptions.organization = new RegExp(
-          organization as string,
-          'i',
-        );
+        filterOptions.organization = new RegExp(organization as string, 'i');
       }
 
       if (verifierEmail) {

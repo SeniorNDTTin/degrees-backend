@@ -10,7 +10,6 @@ import { RolesModule } from './apis/roles/roles.module';
 
 import { DegreesModule } from './apis/degrees/degrees.module';
 
-//CRUD operations for certificates
 import { CertificatesModule } from './apis/certificates/certificates.module';
 import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
@@ -20,10 +19,10 @@ import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('MONGO_URL', ''),
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URL', ''),
+      }),
     }),
 
     AuthModule,
