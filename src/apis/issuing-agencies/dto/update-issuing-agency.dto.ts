@@ -18,10 +18,6 @@ export class UpdateIssuingAgencyBodyDto {
   @IsOptional()
   location: string;
 
-  @IsString()
-  @IsOptional()
-  publicKey: string;
-
   @IsBoolean()
   @IsOptional()
   isUniversity: boolean;

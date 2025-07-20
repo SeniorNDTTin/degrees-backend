@@ -13,10 +13,6 @@ export class CreateIssuingAgencyBodyDto {
   @IsNotEmpty()
   location: string;
 
-  @IsString()
-  @IsNotEmpty()
-  publicKey: string;
-
   @IsBoolean()
   @IsNotEmpty()
   isUniversity: boolean;
