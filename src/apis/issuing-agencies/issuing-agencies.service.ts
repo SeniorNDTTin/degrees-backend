@@ -51,7 +51,7 @@ export class IssuingAgenciesService {
     skip?: number;
     limit?: number;
   }) {
-    filter['isDelete'] = false;
+    filter['isDeleted'] = false;
 
     return await this.issuingAgencyModel
       .find(filter)
@@ -76,7 +76,7 @@ export class IssuingAgenciesService {
     filter: mongoose.RootFilterQuery<IssuingAgency>;
     update: mongoose.UpdateQuery<IssuingAgency>;
   }) {
-    filter['isDelete'] = false;
+    filter['isDeleted'] = false;
 
     return await this.issuingAgencyModel.findOneAndUpdate(filter, update, {
       new: true,
