@@ -83,8 +83,6 @@ export class CertificatesService {
       score,
       scoreDetails,
       issuedDate,
-      certHash,
-      blockchainTxID,
       status,
       studentEmail,
       issuerID,
@@ -104,8 +102,6 @@ export class CertificatesService {
       score,
       scoreDetails: scoreDetails || '',
       issuedDate: new Date(issuedDate),
-      certHash,
-      blockchainTxID,
       status,
       studentEmail,
       issuerID,
@@ -128,8 +124,6 @@ export class CertificatesService {
       score,
       scoreDetails,
       issuedDate,
-      certHash,
-      blockchainTxID,
       status,
       studentEmail,
       issuerID,
@@ -142,9 +136,6 @@ export class CertificatesService {
     if (scoreDetails !== undefined) updateFields.scoreDetails = scoreDetails;
     if (issuedDate !== undefined)
       updateFields.issuedDate = new Date(issuedDate);
-    if (certHash !== undefined) updateFields.certHash = certHash;
-    if (blockchainTxID !== undefined)
-      updateFields.blockchainTxID = blockchainTxID;
     if (status !== undefined) updateFields.status = status;
     if (studentEmail !== undefined) updateFields.studentEmail = studentEmail;
     if (issuerID !== undefined) updateFields.issuerID = issuerID;

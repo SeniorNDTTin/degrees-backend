@@ -1,6 +1,8 @@
 import mongoose, { RootFilterQuery } from 'mongoose';
 
+import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
@@ -9,15 +11,17 @@ import paginationHelper from 'src/helpers/pagination.helper';
 import { LoginDto } from '../auth/dto/login.dto';
 
 import { Degree } from './schemas/degree.schema';
+import { UpdateDegreeDto } from './dto/update-degree.dto';
 import { FindDegreesQueryDto } from './dto/find-degrees.dto';
 import { CreateDegreeBodyDto } from './dto/create-degree.dto';
 import { DeleteDegreeParamDto } from './dto/delete-degree.dto';
 import { FindDegreeByIdParamDto } from './dto/find-degree-by-id.dto';
-import { UpdateDegreeDto } from './dto/update-degree.dto';
 
 @Injectable()
 export class DegreesService {
   constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     @InjectModel(Degree.name)
     private readonly degreeModel: mongoose.Model<Degree>,
   ) {}
@@ -79,35 +83,34 @@ export class DegreesService {
     const { userId } = user;
     const {
       degreeName,
-      degreeType,
       major,
       GPA,
       classification,
       issuedDate,
-      certHash,
-      blockchainTxID,
       status,
       studentEmail,
       issuerID,
-      issuerType,
-      studentSignature,
-      issuerSignature,
     } = body;
+
+    const studentSignature = this.jwtService.sign(
+      { userId },
+      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+    );
+    const issuerSignature = this.jwtService.sign(
+      { issuerID },
+      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+    );
 
     return this.create({
       doc: {
         degreeName,
-        degreeType,
         major,
         GPA,
         classification,
         issuedDate,
-        certHash,
-        blockchainTxID,
         status,
         studentEmail,
         issuerID,
-        issuerType,
         studentSignature,
         issuerSignature,
         createdBy: { userId, createdAt: new Date() },
