@@ -25,14 +25,6 @@ export class CreateCertificateBodyDto {
 
   @IsString()
   @IsNotEmpty()
-  certHash: string;
-
-  @IsString()
-  @IsNotEmpty()
-  blockchainTxID: string;
-
-  @IsString()
-  @IsNotEmpty()
   status: string;
 
   @IsString()

@@ -22,12 +22,6 @@ export class Certificate {
   issuedDate: Date;
 
   @Prop({ type: String, required: true })
-  certHash: string;
-
-  @Prop({ type: String, required: true })
-  blockchainTxID: string;
-
-  @Prop({ type: String, required: true })
   status: string;
 
   @Prop({ type: String, required: true })

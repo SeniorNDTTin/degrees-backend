@@ -13,10 +13,6 @@ export class CreateDegreeBodyDto {
 
   @IsString()
   @IsNotEmpty()
-  degreeType: string;
-
-  @IsString()
-  @IsNotEmpty()
   major: string;
 
   @IsNumber()
@@ -31,14 +27,6 @@ export class CreateDegreeBodyDto {
 
   @IsString()
   @IsNotEmpty()
-  certHash: string;
-
-  @IsString()
-  @IsNotEmpty()
-  blockchainTxID: string;
-
-  @IsString()
-  @IsNotEmpty()
   status: string;
 
   @IsEmail()
@@ -47,16 +35,4 @@ export class CreateDegreeBodyDto {
   @IsString()
   @IsNotEmpty()
   issuerID: string;
-
-  @IsString()
-  @IsNotEmpty()
-  issuerType: string;
-
-  @IsString()
-  @IsNotEmpty()
-  studentSignature: string;
-
-  @IsString()
-  @IsNotEmpty()
-  issuerSignature: string;
 }
