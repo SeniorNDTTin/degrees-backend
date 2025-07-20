@@ -7,10 +7,8 @@ import { AppController } from './app.controller';
 import { UsersModule } from './apis/users/users.module';
 import { AuthModule } from './apis/auth/auth.module';
 import { RolesModule } from './apis/roles/roles.module';
-
 import { DegreesModule } from './apis/degrees/degrees.module';
-
-//CRUD operations for certificates
+import { IssuingAgenciesModule } from './apis/issuing-agencies/issuing-agencies.module';
 import { CertificatesModule } from './apis/certificates/certificates.module';
 import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
@@ -29,11 +27,10 @@ import { VerifiersModule } from './apis/verifiers/verifiers.module';
     AuthModule,
     RolesModule,
     UsersModule,
-
     CertificatesModule,
-
     VerifiersModule,
     DegreesModule,
+    IssuingAgenciesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

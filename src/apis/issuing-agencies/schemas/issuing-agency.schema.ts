@@ -2,21 +2,27 @@ import mongoose from 'mongoose';
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type RoleDocument = mongoose.HydratedDocument<Role>;
+export type IssuingAgencyDocument = mongoose.HydratedDocument<IssuingAgency>;
 
 @Schema({
-  collection: 'roles',
+  collection: 'issuing-agency',
   timestamps: true,
 })
-export class Role {
-  @Prop({ type: String, unique: true, required: true })
+export class IssuingAgency {
+  @Prop({ type: String, require: true })
   name: string;
 
-  @Prop({ type: String, required: true })
-  description: string;
+  @Prop({ type: String, unique: true, required: true })
+  email: string;
 
-  @Prop({ type: [String], required: true })
-  permissions: string[];
+  @Prop({ type: String, required: true })
+  location: string;
+
+  @Prop({ type: String, requied: true })
+  publicKey: string;
+
+  @Prop({ type: Boolean, required: true })
+  isUniversity: boolean;
 
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };
@@ -31,4 +37,4 @@ export class Role {
   deletedBy?: { userId: string; deletedAt: Date };
 }
 
-export const RoleSchema = SchemaFactory.createForClass(Role);
+export const IssuingAgencySchema = SchemaFactory.createForClass(IssuingAgency);
