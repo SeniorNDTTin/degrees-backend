@@ -1,11 +1,12 @@
 import { Request } from 'express';
 
-import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './guard/local-auth.guard';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { LocalAuthGuard } from './guard/local-auth.guard';
+import { ValidateOTPBodyDto } from './dto/validateOTP.dto';
 
 @Controller({
   path: '/auth',
@@ -18,6 +19,11 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   login(@Req() req: Request) {
     return this.authService.login(req.user as LoginDto);
+  }
+
+  @Post('/login/validate-otp')
+  async validateOTP(@Body() body: ValidateOTPBodyDto) {
+    return await this.authService.validateOTP(body);
   }
 
   @Get('/check-access-token')

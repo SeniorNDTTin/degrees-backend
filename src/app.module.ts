@@ -18,10 +18,10 @@ import { VerifiersModule } from './apis/verifiers/verifiers.module';
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('MONGO_URL', ''),
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URL', ''),
+      }),
     }),
 
     AuthModule,

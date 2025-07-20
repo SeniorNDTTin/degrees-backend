@@ -7,7 +7,7 @@ export class CreateVerifierBodyDto {
 
   @IsString()
   @IsNotEmpty()
-  oragranization: string;
+  organization: string;
 
   @IsString()
   @IsNotEmpty()

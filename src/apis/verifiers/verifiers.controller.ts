@@ -22,7 +22,7 @@ import { VerifiersService } from './verifiers.service';
 import { CreateVerifierBodyDto } from './dto/create-verfier.dto';
 import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
 import { DeleteVerifierParamDto } from './dto/delete-verifier.dto';
-import { FindVerifierByIdParamDto } from './dto/find-role-by-id.dto';
+import { FindVerifierByIdParamDto } from './dto/find-verifier-by-id.dto';
 
 @Controller({
   path: '/verifiers',
@@ -65,6 +65,6 @@ export class VerifiersController {
   @Get('/find/:id')
   @UseGuards(JwtAuthGuard)
   async findRoleById(@Param() param: FindVerifierByIdParamDto) {
-    return await this.verifiersService.findRoleById(param);
+    return await this.verifiersService.findVerifierById(param);
   }
 }

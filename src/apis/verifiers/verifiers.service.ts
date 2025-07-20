@@ -16,7 +16,7 @@ import { Verifier } from './schemas/verifier.schema';
 import { CreateVerifierBodyDto } from './dto/create-verfier.dto';
 import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
 import { DeleteVerifierParamDto } from './dto/delete-verifier.dto';
-import { FindVerifierByIdParamDto } from './dto/find-role-by-id.dto';
+import { FindVerifierByIdParamDto } from './dto/find-verifier-by-id.dto';
 
 @Injectable()
 export class VerifiersService {
@@ -81,12 +81,12 @@ export class VerifiersService {
   // POST /v1/verifiers/create
   async createVerifier(user: LoginDto, body: CreateVerifierBodyDto) {
     const { userId } = user;
-    const { verifierName, oragranization, verifierEmail } = body;
+    const { verifierName, organization, verifierEmail } = body;
 
     return await this.create({
       doc: {
         verifierName,
-        oragranization,
+        organization,
         verifierEmail,
         createdBy: { userId, createdAt: new Date() },
       },
@@ -101,13 +101,13 @@ export class VerifiersService {
   ) {
     const { userId } = user;
     const { id } = param;
-    const { verifierName, oragranization, verifierEmail } = body;
+    const { verifierName, organization, verifierEmail } = body;
 
     const verifierExists = await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
         verifierName,
-        oragranization,
+        organization,
         verifierEmail,
         $push: { updatedBy: { userId, updatedAt: new Date() } },
       },
@@ -135,30 +135,27 @@ export class VerifiersService {
     return {};
   }
 
-  // GET /v1/verifiers/find?filter?={verifierName?, oragranization?, verifierEmail?, sortBy?, sortOrder?}&page?&limit?
+  // GET /v1/verifiers/find?filter?={verifierName?, organization?, verifierEmail?, sortBy?, sortOrder?}&page?&limit?
   async findVerifiers(query: FindVerifiersQueryDto) {
     const { filter, page, limit } = query;
     const filterOptions: {
       verifierName?: RegExp;
-      oragranization?: RegExp;
+      organization?: RegExp;
       verifierEmail?: RegExp;
     } = {};
     let sort = {};
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { verifierName, oragranization, verifierEmail, sortBy, sortOrder } =
+      const { verifierName, organization, verifierEmail, sortBy, sortOrder } =
         filter;
 
       if (verifierName) {
         filterOptions.verifierName = new RegExp(verifierName as string, 'i');
       }
 
-      if (oragranization) {
-        filterOptions.oragranization = new RegExp(
-          oragranization as string,
-          'i',
-        );
+      if (organization) {
+        filterOptions.organization = new RegExp(organization as string, 'i');
       }
 
       if (verifierEmail) {
@@ -168,7 +165,7 @@ export class VerifiersService {
       sort = sortHelper(sortBy as string, sortOrder as string);
     }
 
-    const [total, roles] = await Promise.all([
+    const [total, verifiers] = await Promise.all([
       this.countDocuments({ filter: filterOptions }),
       this.find({
         filter: filterOptions,
@@ -178,17 +175,17 @@ export class VerifiersService {
       }),
     ]);
     return {
-      roles: {
+      verifiers: {
         total,
         page,
         limit,
-        items: roles,
+        items: verifiers,
       },
     };
   }
 
   // GET /v1/verifiers/find/:id
-  async findRoleById(param: FindVerifierByIdParamDto) {
+  async findVerifierById(param: FindVerifierByIdParamDto) {
     const { id } = param;
 
     const verifierExists = await this.findOne({ filter: { _id: id } });

@@ -13,7 +13,7 @@ export class Verifier {
   verifierName: string;
 
   @Prop({ type: String, required: true })
-  oragranization: string;
+  organization: string;
 
   @Prop({ type: String, required: true })
   verifierEmail: string;

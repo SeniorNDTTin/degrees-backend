@@ -27,15 +27,7 @@ export class UpdateCertificateBodyDto {
   @IsDateString()
   @IsOptional()
   issuedDate?: Date;
-
-  @IsString()
-  @IsOptional()
-  certHash?: string;
-
-  @IsString()
-  @IsOptional()
-  blockchainTxID?: string;
-
+  
   @IsString()
   @IsOptional()
   status?: string;
