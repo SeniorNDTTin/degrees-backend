@@ -27,7 +27,7 @@ export class UpdateCertificateBodyDto {
   @IsDateString()
   @IsOptional()
   issuedDate?: Date;
-  
+
   @IsString()
   @IsOptional()
   status?: string;

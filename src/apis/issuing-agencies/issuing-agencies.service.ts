@@ -1,22 +1,23 @@
-import { InjectModel } from '@nestjs/mongoose';
-
 import mongoose, { Promise, RootFilterQuery } from 'mongoose';
+
+import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
 
+import { LoginDto } from '../auth/dto/login.dto';
+
 import {
   IssuingAgency,
   IssuingAgencyDocument,
 } from './schemas/issuing-agency.schema';
-
 import {
   UpdateIssuingAgencyBodyDto,
   UpdateIssuingAgencyParamDto,
 } from './dto/update-issuing-agency.dto';
-
-import { LoginDto } from '../auth/dto/login.dto';
 import { CreateIssuingAgencyBodyDto } from './dto/create-issuing-agency.dto';
 import { DeleteIssuingAgencyParamDto } from './dto/delete-issuing-agency.dto';
 import { FindIssuingAgenciesQueryDto } from './dto/find-issuing-agencies.dto';
@@ -25,6 +26,8 @@ import { FindIssuingAgencyByIdParamDto } from './dto/find-issuing-agency-by-id.d
 @Injectable()
 export class IssuingAgenciesService {
   constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     @InjectModel(IssuingAgency.name)
     private readonly issuingAgencyModel: mongoose.Model<IssuingAgencyDocument>,
   ) {}
@@ -87,17 +90,26 @@ export class IssuingAgenciesService {
   // POST /v1/issuing-agency/create
   async createIssuingAgency(user: LoginDto, body: CreateIssuingAgencyBodyDto) {
     const { userId } = user;
-    const { name, email, location, publicKey, isUniversity } = body;
+    const { name, email, location, isUniversity } = body;
 
-    return this.create({
+    const newIssuingAgency = await this.create({
       doc: {
         name,
         email,
         location,
-        publicKey,
         isUniversity,
         createdBy: { userId, createdAt: new Date() },
       },
+    });
+
+    const publicKey = this.jwtService.sign(
+      { issuingAgencyId: newIssuingAgency.id as string },
+      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+    );
+
+    return await this.findOneAndUpdate({
+      filter: { _id: newIssuingAgency.id },
+      update: { publicKey },
     });
   }
 
@@ -109,7 +121,7 @@ export class IssuingAgenciesService {
   ) {
     const { userId } = user;
     const { id } = param;
-    const { name, email, location, publicKey, isUniversity } = body;
+    const { name, email, location, isUniversity } = body;
 
     const issuingAgencyExists = await this.findOneAndUpdate({
       filter: { _id: id },
@@ -117,7 +129,6 @@ export class IssuingAgenciesService {
         name,
         email,
         location,
-        publicKey,
         isUniversity,
         $push: {
           updatedBy: { userId, updateAt: new Date() },
@@ -157,29 +168,18 @@ export class IssuingAgenciesService {
       name?: RegExp;
       email?: RegExp;
       location?: RegExp;
-      publicKey?: RegExp;
       isUniversity?: boolean;
     } = {};
     let sort = {};
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const {
-        name,
-        email,
-        location,
-        publicKey,
-        isUniversity,
-        sortBy,
-        sortOrder,
-      } = filter;
+      const { name, email, location, isUniversity, sortBy, sortOrder } = filter;
 
       if (name) filterOptions.name = new RegExp(name as string, 'i');
       if (email) filterOptions.email = new RegExp(email as string, 'i');
       if (location)
         filterOptions.location = new RegExp(location as string, 'i');
-      if (publicKey)
-        filterOptions.publicKey = new RegExp(publicKey as string, 'i');
       if (isUniversity !== undefined) {
         filterOptions.isUniversity = isUniversity === 'true';
       }

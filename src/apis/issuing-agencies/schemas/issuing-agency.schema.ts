@@ -18,8 +18,8 @@ export class IssuingAgency {
   @Prop({ type: String, required: true })
   location: string;
 
-  @Prop({ type: String, requied: true })
-  publicKey: string;
+  @Prop({ type: String })
+  publicKey?: string;
 
   @Prop({ type: Boolean, required: true })
   isUniversity: boolean;
