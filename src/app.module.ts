@@ -11,6 +11,8 @@ import { DegreesModule } from './apis/degrees/degrees.module';
 import { IssuingAgenciesModule } from './apis/issuing-agencies/issuing-agencies.module';
 import { CertificatesModule } from './apis/certificates/certificates.module';
 import { VerifiersModule } from './apis/verifiers/verifiers.module';
+import { VerificationsModule } from './apis/verification/verifications.module';
+
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { VerifiersModule } from './apis/verifiers/verifiers.module';
     UsersModule,
     CertificatesModule,
     VerifiersModule,
+    VerificationsModule,
     DegreesModule,
     IssuingAgenciesModule,
   ],
