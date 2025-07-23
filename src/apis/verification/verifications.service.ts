@@ -91,7 +91,11 @@ export class VerificationsService {
       createdBy: { userId: user.userId, createdAt: new Date() },
     };
 
-    return this.create({ doc: doc as Verification });
+    const newVerification = this.create({ doc: doc as Verification });
+
+    // Gửi mail
+
+    return newVerification;
   }
 
   async updateVerification(
@@ -147,6 +151,9 @@ export class VerificationsService {
     });
 
     if (!updated) throw new NotFoundException('Verification not found');
+
+    // Gửi mail
+
     return updated;
   }
 
@@ -160,6 +167,9 @@ export class VerificationsService {
     });
 
     if (!deleted) throw new NotFoundException('Verification not found');
+
+    // Gửi mail
+
     return {};
   }
 
