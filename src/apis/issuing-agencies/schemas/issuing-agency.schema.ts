@@ -9,7 +9,7 @@ export type IssuingAgencyDocument = mongoose.HydratedDocument<IssuingAgency>;
   timestamps: true,
 })
 export class IssuingAgency {
-  @Prop({ type: String, require: true })
+  @Prop({ type: String, required: true })
   name: string;
 
   @Prop({ type: String, unique: true, required: true })

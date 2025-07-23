@@ -1,27 +1,22 @@
-import mongoose, { Promise, RootFilterQuery } from 'mongoose';
-
-import { JwtService } from '@nestjs/jwt';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import mongoose, { RootFilterQuery } from 'mongoose';
+import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Injectable, NotFoundException } from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
 
 import { LoginDto } from '../auth/dto/login.dto';
-
-import {
-  IssuingAgency,
-  IssuingAgencyDocument,
-} from './schemas/issuing-agency.schema';
-import {
-  UpdateIssuingAgencyBodyDto,
-  UpdateIssuingAgencyParamDto,
-} from './dto/update-issuing-agency.dto';
+import { IssuingAgency, IssuingAgencyDocument } from './schemas/issuing-agency.schema';
 import { CreateIssuingAgencyBodyDto } from './dto/create-issuing-agency.dto';
 import { DeleteIssuingAgencyParamDto } from './dto/delete-issuing-agency.dto';
 import { FindIssuingAgenciesQueryDto } from './dto/find-issuing-agencies.dto';
 import { FindIssuingAgencyByIdParamDto } from './dto/find-issuing-agency-by-id.dto';
+import { UpdateIssuingAgencyBodyDto, UpdateIssuingAgencyParamDto } from './dto/update-issuing-agency.dto';
 
 @Injectable()
 export class IssuingAgenciesService {
@@ -29,193 +24,163 @@ export class IssuingAgenciesService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(IssuingAgency.name)
-    private readonly issuingAgencyModel: mongoose.Model<IssuingAgencyDocument>,
+    private readonly model: mongoose.Model<IssuingAgencyDocument>,
   ) {}
 
   async create({ doc }: { doc: IssuingAgency }) {
-    const newIssuingAgency = new this.issuingAgencyModel(doc);
-    return await newIssuingAgency.save();
+    return new this.model(doc).save();
   }
 
   async countDocuments({ filter }: { filter: RootFilterQuery<IssuingAgency> }) {
     filter['isDeleted'] = false;
-
-    return await this.issuingAgencyModel.countDocuments(filter);
+    return this.model.countDocuments(filter);
   }
 
   async find({
     filter,
-    sort,
-    skip,
-    limit,
+    sort = {},
+    skip = 0,
+    limit = 20,
   }: {
-    filter: RootFilterQuery<IssuingAgency>;
+    filter: mongoose.FilterQuery<IssuingAgency>;
     sort?: { [key: string]: mongoose.SortOrder };
     skip?: number;
     limit?: number;
   }) {
-    filter['isDeleted'] = false;
-
-    return await this.issuingAgencyModel
-      .find(filter)
-      .sort(sort)
-      .skip(skip || 0)
-      .limit(limit || 20);
+    filter.isDeleted = false;
+    return this.model.find(filter).sort(sort).skip(skip).limit(limit).lean();
   }
 
-  async findOne({
-    filter,
-  }: {
-    filter: mongoose.RootFilterQuery<IssuingAgency>;
-  }) {
+  async findOne({ filter }: { filter: RootFilterQuery<IssuingAgency> }) {
     filter['isDeleted'] = false;
-    return await this.issuingAgencyModel.findOne(filter);
+    return this.model.findOne(filter).lean();
   }
 
   async findOneAndUpdate({
     filter,
     update,
+    options = {},
   }: {
-    filter: mongoose.RootFilterQuery<IssuingAgency>;
+    filter: RootFilterQuery<IssuingAgency>;
     update: mongoose.UpdateQuery<IssuingAgency>;
+    options?: mongoose.QueryOptions;
   }) {
     filter['isDeleted'] = false;
-
-    return await this.issuingAgencyModel.findOneAndUpdate(filter, update, {
+    return this.model.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
+      ...options,
     });
   }
 
-  // POST /v1/issuing-agency/create
   async createIssuingAgency(user: LoginDto, body: CreateIssuingAgencyBodyDto) {
-    const { userId } = user;
-    const { name, email, location, isUniversity } = body;
+    const doc: any = {
+      ...body,
+      isDeleted: false,
+      createdBy: { userId: user.userId, createdAt: new Date() },
+    };
 
-    const newIssuingAgency = await this.create({
-      doc: {
-        name,
-        email,
-        location,
-        isUniversity,
-        createdBy: { userId, createdAt: new Date() },
-      },
-    });
+    const newIssuingAgency = await this.create({ doc: doc as IssuingAgency });
 
     const publicKey = this.jwtService.sign(
       { issuingAgencyId: newIssuingAgency.id as string },
       { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
     );
 
-    return await this.findOneAndUpdate({
+    return this.findOneAndUpdate({
       filter: { _id: newIssuingAgency.id },
       update: { publicKey },
     });
   }
 
-  // PATH /v1/issuing-agency/update/:id
   async updateIssuingAgency(
     user: LoginDto,
     param: UpdateIssuingAgencyParamDto,
     body: UpdateIssuingAgencyBodyDto,
   ) {
-    const { userId } = user;
-    const { id } = param;
-    const { name, email, location, isUniversity } = body;
-
-    const issuingAgencyExists = await this.findOneAndUpdate({
-      filter: { _id: id },
+    const updated = await this.findOneAndUpdate({
+      filter: { _id: param.id },
       update: {
-        name,
-        email,
-        location,
-        isUniversity,
+        ...body,
         $push: {
-          updatedBy: { userId, updateAt: new Date() },
+          updatedBy: { userId: user.userId, updatedAt: new Date() },
         },
       },
     });
-    if (!issuingAgencyExists) {
-      throw new NotFoundException('Issuing Agency id not found');
-    }
 
-    return issuingAgencyExists;
+    if (!updated) throw new NotFoundException('Issuing Agency not found');
+
+    return updated;
   }
 
-  // DELETE  /v1/issuing-agency/delete/:id
-  async deleteIssuingAgency(
-    user: LoginDto,
-    param: DeleteIssuingAgencyParamDto,
-  ) {
-    const { userId } = user;
-    const { id } = param;
-
-    const issuingAgencyExists = await this.findOneAndUpdate({
-      filter: { _id: id },
-      update: { isDeleted: true, deletedBy: { userId, deleteAt: new Date() } },
+  async deleteIssuingAgency(user: LoginDto, param: DeleteIssuingAgencyParamDto) {
+    const deleted = await this.findOneAndUpdate({
+      filter: { _id: param.id },
+      update: {
+        isDeleted: true,
+        deletedBy: { userId: user.userId, deletedAt: new Date() },
+      },
     });
-    if (!issuingAgencyExists) {
-      throw new NotFoundException('Issuing Agency id not found');
-    }
+
+    if (!deleted) throw new NotFoundException('Issuing Agency not found');
 
     return {};
   }
 
-  // GET /vi/issuing-agencies/find?filter?={name?, email?, location?, publicKey?, isUniversity?, sortBy?, sortOrder?}&page?&limit?
   async findIssuingAgencies(query: FindIssuingAgenciesQueryDto) {
-    const { filter, page, limit } = query;
-    const filterOptions: {
-      name?: RegExp;
-      email?: RegExp;
-      location?: RegExp;
-      isUniversity?: boolean;
-    } = {};
-    let sort = {};
+    const { filter, page = 1, limit = 20 } = query;
+    const filterOptions: any = {};
     const pagination = paginationHelper(page, limit);
+    let sort = {};
 
     if (filter) {
-      const { name, email, location, isUniversity, sortBy, sortOrder } = filter;
+      try {
+        const filterData = typeof filter === 'string' ? JSON.parse(filter) : filter;
+        const { name, email, location, isUniversity, sortBy, sortOrder } = filterData;
 
-      if (name) filterOptions.name = new RegExp(name as string, 'i');
-      if (email) filterOptions.email = new RegExp(email as string, 'i');
-      if (location)
-        filterOptions.location = new RegExp(location as string, 'i');
-      if (isUniversity !== undefined) {
-        filterOptions.isUniversity = isUniversity === 'true';
+        if (name) filterOptions.name = new RegExp(String(name), 'i');
+        if (email) filterOptions.email = new RegExp(String(email), 'i');
+        if (location) filterOptions.location = new RegExp(String(location), 'i');
+        if (typeof isUniversity !== 'undefined') {
+          filterOptions.isUniversity = isUniversity === true || String(isUniversity).toLowerCase() === 'true';
+        }
+
+        sort = sortHelper(sortBy, sortOrder);
+      } catch (error) {
+        console.error('Error parsing filter:', error);
       }
-
-      sort = sortHelper(sortBy as string, sortOrder as string);
     }
 
-    const [total, issuingAgencies] = (await Promise.all([
-      this.issuingAgencyModel.countDocuments(filterOptions),
-      this.issuingAgencyModel
-        .find(filterOptions)
-        .sort(sort)
-        .skip(pagination.skip)
-        .limit(pagination.limit)
-        .lean(),
-    ])) as [number, IssuingAgencyDocument[]];
+    const [total, items] = await Promise.all([
+      this.countDocuments({ filter: filterOptions }),
+      this.find({
+        filter: filterOptions,
+        sort,
+        skip: pagination.skip,
+        limit: pagination.limit,
+      }),
+    ]);
 
     return {
-      issuingAgencies: {
-        total,
-        page,
-        limit,
-        items: issuingAgencies,
+      data: {
+        issuingAgencies: {
+          items: items.map(item => ({
+            ...item,
+            _id: item._id.toString()
+          })),
+          total,
+          page,
+          limit
+        }
       },
+      message: 'Success',
+      statusCode: 200
     };
   }
 
-  // GET /v1/issuing-agency/find/:id
   async findIssuingAgencyById(param: FindIssuingAgencyByIdParamDto) {
-    const { id } = param;
-
-    const issuingAgencyExists = await this.findOne({ filter: { _id: id } });
-    if (!issuingAgencyExists) {
-      throw new NotFoundException('Issuing Agency id not found');
-    }
-
-    return issuingAgencyExists;
+    const found = await this.findOne({ filter: { _id: param.id } });
+    if (!found) throw new NotFoundException('Issuing Agency not found');
+    return found;
   }
 }

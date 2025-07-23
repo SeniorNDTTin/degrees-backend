@@ -1,17 +1,30 @@
 import { Transform, Type } from 'class-transformer';
 import { IsNumber, IsObject, IsOptional, Max, Min } from 'class-validator';
 
+export interface IssuingAgencyFilter {
+  name?: string;
+  email?: string;
+  location?: string;
+  isUniversity?: boolean | string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 export class FindIssuingAgenciesQueryDto {
   @IsObject()
   @Transform(({ value }) => {
     if (!value) return {};
-    if (typeof value === 'string')
-      return JSON.parse(value) as Record<string, any>;
-
-    return value as Record<string, any>;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value) as IssuingAgencyFilter;
+      } catch {
+        return {};
+      }
+    }
+    return value as IssuingAgencyFilter;
   })
   @IsOptional()
-  filter?: Record<string, any>;
+  filter?: IssuingAgencyFilter;
 
   @Min(1)
   @IsNumber()
