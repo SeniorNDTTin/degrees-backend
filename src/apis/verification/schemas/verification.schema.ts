@@ -6,18 +6,28 @@ export type VerificationDocument = mongoose.HydratedDocument<Verification>;
 
 @Schema({ collection: 'verifications', timestamps: true })
 export class Verification {
-  
-
   @Prop({ required: true, enum: ['degree', 'certificate'] })
   type: 'degree' | 'certificate';
 
   @Prop({ type: Types.ObjectId, ref: 'Verifier', required: true })
   verifierId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Degree', required: function () { return this.type === 'degree'; } })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Degree',
+    required: function () {
+      return this.type === 'degree';
+    },
+  })
   degreeId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Certificate', required: function () { return this.type === 'certificate'; } })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Certificate',
+    required: function () {
+      return this.type === 'certificate';
+    },
+  })
   certificateId?: Types.ObjectId;
 
   @Prop({ type: String, required: true })

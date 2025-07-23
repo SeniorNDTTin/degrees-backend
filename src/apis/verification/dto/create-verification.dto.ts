@@ -1,9 +1,13 @@
 // src/apis/verifications/dto/create-verification.dto.ts
-import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateVerificationBodyDto {
-
-
   @IsEnum(['degree', 'certificate'])
   type: 'degree' | 'certificate';
 

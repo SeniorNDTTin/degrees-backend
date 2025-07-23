@@ -3,18 +3,23 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { VerificationsService } from './verifications.service';
 import { VerificationsController } from './verifications.controller';
-import { Verification, VerificationSchema } from './schemas/verification.schema';
+import {
+  Verification,
+  VerificationSchema,
+} from './schemas/verification.schema';
 import { Degree, DegreeSchema } from '../degrees/schemas/degree.schema';
-import { Certificate, CertificateSchema } from '../certificates/schemas/certificate.schema';
-
+import {
+  Certificate,
+  CertificateSchema,
+} from '../certificates/schemas/certificate.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Verification.name, schema: VerificationSchema },
-       { name: Degree.name, schema: DegreeSchema },
-       { name: Certificate.name, schema: CertificateSchema },
-      ]),
-
+    MongooseModule.forFeature([
+      { name: Verification.name, schema: VerificationSchema },
+      { name: Degree.name, schema: DegreeSchema },
+      { name: Certificate.name, schema: CertificateSchema },
+    ]),
   ],
   providers: [VerificationsService],
   controllers: [VerificationsController],
