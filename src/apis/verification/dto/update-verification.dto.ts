@@ -1,5 +1,12 @@
 // src/apis/verifications/dto/update-verification.dto.ts
-import { IsBoolean, IsEnum, IsMongoId, IsOptional, IsString, IsEmail } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  IsEmail,
+} from 'class-validator';
 
 export class UpdateVerificationParamDto {
   @IsMongoId()
@@ -7,7 +14,6 @@ export class UpdateVerificationParamDto {
 }
 
 export class UpdateVerificationBodyDto {
-
   @IsOptional()
   @IsEmail()
   studentEmail: string;
