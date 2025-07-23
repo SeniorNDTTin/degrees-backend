@@ -1,11 +1,24 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { VerificationsService } from './verifications.service';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { User } from '../users/decorators/user.decorator';
 import { LoginDto } from '../auth/dto/login.dto';
 
 import { CreateVerificationBodyDto } from './dto/create-verification.dto';
-import { UpdateVerificationParamDto, UpdateVerificationBodyDto } from './dto/update-verification.dto';
+import {
+  UpdateVerificationParamDto,
+  UpdateVerificationBodyDto,
+} from './dto/update-verification.dto';
 import { DeleteVerificationParamDto } from './dto/delete-verification.dto';
 import { FindVerificationByIdParamDto } from './dto/find-verification-by-id.dto';
 import { FindVerificationsQueryDto } from './dto/find-verifications.dto';
