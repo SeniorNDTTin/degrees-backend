@@ -132,20 +132,29 @@ export class UsersService {
       );
     }
 
+    let hashedPassword: string | undefined = undefined;
+
+    if (password) {
+      hashedPassword = await this.hashPassword({ password });
+    }
+
     const usersExists = await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
         fullName,
         email,
-        password,
         birthday,
         gender,
         roleId,
+        ...(hashedPassword && { password: hashedPassword }),
         $push: {
           updatedBy: { userId, updatedAt: new Date() },
         },
       },
     });
+
+    console.log(body);
+
     if (!usersExists) {
       throw new NotFoundException('User id not found');
     }
