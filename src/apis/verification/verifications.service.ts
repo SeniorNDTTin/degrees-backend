@@ -102,7 +102,9 @@ export class VerificationsService {
         studentEmail = degree.studentEmail;
       }
     } else if (body.type === 'certificate' && body.certificateId) {
-      const certificate = await this.certificateModel.findById(body.certificateId);
+      const certificate = await this.certificateModel.findById(
+        body.certificateId,
+      );
       if (certificate) {
         studentEmail = certificate.studentEmail;
       }
@@ -131,7 +133,7 @@ export class VerificationsService {
         console.error('Lỗi gửi email:', error);
       }
     }
-    
+
     return newVerification;
   }
 
@@ -199,7 +201,9 @@ export class VerificationsService {
         studentEmail = degree.studentEmail;
       }
     } else if (updated.type === 'certificate' && updated.certificateId) {
-      const certificate = await this.certificateModel.findById(updated.certificateId);
+      const certificate = await this.certificateModel.findById(
+        updated.certificateId,
+      );
       if (certificate) {
         studentEmail = certificate.studentEmail;
       }
@@ -251,7 +255,9 @@ export class VerificationsService {
         studentEmail = degree.studentEmail;
       }
     } else if (deleted.type === 'certificate' && deleted.certificateId) {
-      const certificate = await this.certificateModel.findById(deleted.certificateId);
+      const certificate = await this.certificateModel.findById(
+        deleted.certificateId,
+      );
       if (certificate) {
         studentEmail = certificate.studentEmail;
       }
