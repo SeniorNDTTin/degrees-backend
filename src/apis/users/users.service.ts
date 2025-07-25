@@ -126,12 +126,6 @@ export class UsersService {
     const { id } = param;
     const { fullName, email, password, birthday, gender, roleId } = body;
 
-    if (roleId !== 'admin' && userId !== id) {
-      throw new ForbiddenException(
-        'You do not have permission to update this user',
-      );
-    }
-
     let hashedPassword: string | undefined = undefined;
 
     if (password) {
