@@ -23,6 +23,7 @@ import { FindVerificationsQueryDto } from './dto/find-verifications.dto';
 import { LoginDto } from '../auth/dto/login.dto';
 import paginationHelper from 'src/helpers/pagination.helper';
 import sortHelper from 'src/helpers/sort.helper';
+import sendMailHelper from 'src/helpers/sendMail.helper';
 
 @Injectable()
 export class VerificationsService {
@@ -94,7 +95,43 @@ export class VerificationsService {
     const newVerification = this.create({ doc: doc as Verification });
 
     // Gửi mail
+    let studentEmail: string | undefined;
+    if (body.type === 'degree' && body.degreeId) {
+      const degree = await this.degreeModel.findById(body.degreeId);
+      if (degree) {
+        studentEmail = degree.studentEmail;
+      }
+    } else if (body.type === 'certificate' && body.certificateId) {
+      const certificate = await this.certificateModel.findById(body.certificateId);
+      if (certificate) {
+        studentEmail = certificate.studentEmail;
+      }
+    }
 
+    if (studentEmail) {
+      try {
+        await sendMailHelper({
+          email: studentEmail,
+          subject: 'Thông báo: Yêu cầu xác minh mới',
+          html: `
+            <h1>Xin chào</h1>
+            <p>Một yêu cầu xác minh mới đã được tạo cho bạn.</p>
+            <p><strong>Chi tiết:</strong></p>
+            <ul>
+              <li><strong>ID xác minh:</strong> ${(await newVerification)._id}</li>
+              <li><strong>Loại tài liệu:</strong> ${body.type === 'degree' ? 'Bằng cấp' : 'Chứng chỉ'}</li>
+              <li><strong>Mô tả:</strong> ${body.description}</li>
+              <li><strong>Người xác minh (ID):</strong> ${body.verifierId}</li>
+              <li><strong>Trạng thái:</strong> Chưa xác minh</li>
+            </ul>
+            <p>Vui lòng liên hệ quản trị viên nếu có thắc mắc.</p>
+          `,
+        });
+      } catch (error) {
+        console.error('Lỗi gửi email:', error);
+      }
+    }
+    
     return newVerification;
   }
 
@@ -153,6 +190,44 @@ export class VerificationsService {
     if (!updated) throw new NotFoundException('Verification not found');
 
     // Gửi mail
+    let studentEmail: string | undefined;
+    if (body.studentEmail) {
+      studentEmail = body.studentEmail;
+    } else if (updated.type === 'degree' && updated.degreeId) {
+      const degree = await this.degreeModel.findById(updated.degreeId);
+      if (degree) {
+        studentEmail = degree.studentEmail;
+      }
+    } else if (updated.type === 'certificate' && updated.certificateId) {
+      const certificate = await this.certificateModel.findById(updated.certificateId);
+      if (certificate) {
+        studentEmail = certificate.studentEmail;
+      }
+    }
+
+    if (studentEmail) {
+      try {
+        await sendMailHelper({
+          email: studentEmail,
+          subject: 'Thông báo: Yêu cầu xác minh đã được cập nhật',
+          html: `
+            <h1>Xin chào</h1>
+            <p>Yêu cầu xác minh của bạn đã được cập nhật.</p>
+            <p><strong>Chi tiết:</strong></p>
+            <ul>
+              <li><strong>ID xác minh:</strong> ${updated._id}</li>
+              <li><strong>Loại tài liệu:</strong> ${updated.type === 'degree' ? 'Bằng cấp' : 'Chứng chỉ'}</li>
+              <li><strong>Mô tả:</strong> ${updated.description}</li>
+              <li><strong>Người xác minh (ID):</strong> ${updated.verifierId}</li>
+              <li><strong>Trạng thái:</strong> ${updated.status ? 'Đã xác minh' : 'Chưa xác minh'}</li>
+            </ul>
+            <p>Vui lòng liên hệ quản trị viên nếu có thắc mắc.</p>
+          `,
+        });
+      } catch (error) {
+        console.error('Lỗi gửi email:', error);
+      }
+    }
 
     return updated;
   }
@@ -169,6 +244,41 @@ export class VerificationsService {
     if (!deleted) throw new NotFoundException('Verification not found');
 
     // Gửi mail
+    let studentEmail: string | undefined;
+    if (deleted.type === 'degree' && deleted.degreeId) {
+      const degree = await this.degreeModel.findById(deleted.degreeId);
+      if (degree) {
+        studentEmail = degree.studentEmail;
+      }
+    } else if (deleted.type === 'certificate' && deleted.certificateId) {
+      const certificate = await this.certificateModel.findById(deleted.certificateId);
+      if (certificate) {
+        studentEmail = certificate.studentEmail;
+      }
+    }
+
+    if (studentEmail) {
+      try {
+        await sendMailHelper({
+          email: studentEmail,
+          subject: 'Thông báo: Yêu cầu xác minh đã bị xóa',
+          html: `
+            <h1>Xin chào</h1>
+            <p>Yêu cầu xác minh của bạn đã bị xóa.</p>
+            <p><strong>Chi tiết:</strong></p>
+            <ul>
+              <li><strong>ID xác minh:</strong> ${deleted._id}</li>
+              <li><strong>Loại tài liệu:</strong> ${deleted.type === 'degree' ? 'Bằng cấp' : 'Chứng chỉ'}</li>
+              <li><strong>Mô tả:</strong> ${deleted.description}</li>
+              <li><strong>Người xác minh (ID):</strong> ${deleted.verifierId}</li>
+            </ul>
+            <p>Vui lòng liên hệ quản trị viên nếu có thắc mắc.</p>
+          `,
+        });
+      } catch (error) {
+        console.error('Lỗi gửi email:', error);
+      }
+    }
 
     return {};
   }
