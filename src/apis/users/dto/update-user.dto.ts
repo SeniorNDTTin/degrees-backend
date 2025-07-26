@@ -3,21 +3,28 @@ import {
   IsEmail,
   IsIn,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsStrongPassword,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class CreateUserBodyDto {
-  @IsString()
+export class UpdateUserParamDto {
   @IsNotEmpty()
-  fullName: string;
+  id: string;
+}
 
+export class UpdateUserBodyDto {
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
   @IsEmail()
   @IsString()
-  @IsNotEmpty()
-  email: string;
+  email?: string;
 
+  @IsOptional()
   @IsStrongPassword({
     minLength: 8,
     minLowercase: 1,
@@ -26,19 +33,19 @@ export class CreateUserBodyDto {
     minNumbers: 1,
   })
   @IsString()
-  @IsNotEmpty()
-  password: string;
+  password?: string;
 
+  @IsOptional()
   @IsDate()
   @Type(() => Date)
-  @IsNotEmpty()
-  birthday: Date;
+  birthday?: Date;
 
+  @IsOptional()
   @IsIn(['male', 'female'])
   @IsString()
-  @IsNotEmpty()
-  gender: string;
+  gender?: string;
 
+  @IsOptional()
   @IsString()
-  roleId: string;
+  roleId?: string;
 }
