@@ -3,7 +3,11 @@ import mongoose, { Promise, RootFilterQuery } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
@@ -22,11 +26,14 @@ import { CreateIssuingAgencyBodyDto } from './dto/create-issuing-agency.dto';
 import { DeleteIssuingAgencyParamDto } from './dto/delete-issuing-agency.dto';
 import { FindIssuingAgenciesQueryDto } from './dto/find-issuing-agencies.dto';
 import { FindIssuingAgencyByIdParamDto } from './dto/find-issuing-agency-by-id.dto';
+import { UsersService } from '../users/users.service';
+import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class IssuingAgenciesService {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     @InjectModel(IssuingAgency.name)
     private readonly issuingAgencyModel: mongoose.Model<IssuingAgencyDocument>,
@@ -87,9 +94,34 @@ export class IssuingAgenciesService {
     });
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.usersService.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   // POST /v1/issuing-agency/create
   async createIssuingAgency(user: LoginDto, body: CreateIssuingAgencyBodyDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'create-issuing-agency',
+    });
+
     const { name, email, location, isUniversity } = body;
 
     const newIssuingAgency = await this.create({
@@ -120,6 +152,11 @@ export class IssuingAgenciesService {
     body: UpdateIssuingAgencyBodyDto,
   ) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'update-issuing-agency',
+    });
+
     const { id } = param;
     const { name, email, location, isUniversity } = body;
 
@@ -148,6 +185,11 @@ export class IssuingAgenciesService {
     param: DeleteIssuingAgencyParamDto,
   ) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'delete-issuing-agency',
+    });
+
     const { id } = param;
 
     const issuingAgencyExists = await this.findOneAndUpdate({

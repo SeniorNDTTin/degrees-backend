@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+import { UsersModule } from '../users/users.module';
+
 import { DegreesService } from './degrees.service';
 import { DegreesController } from './degrees.controller';
 import { Degree, DegreeSchema } from './schemas/degree.schema';
@@ -18,6 +20,8 @@ import { Degree, DegreeSchema } from './schemas/degree.schema';
     }),
 
     MongooseModule.forFeature([{ name: Degree.name, schema: DegreeSchema }]),
+
+    UsersModule,
   ],
   controllers: [DegreesController],
   providers: [DegreesService],
