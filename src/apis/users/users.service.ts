@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import mongoose from 'mongoose';
+import mongoose, { RootFilterQuery } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 
@@ -14,6 +14,10 @@ import { UpdateUserBodyDto, UpdateUserParamDto } from './dto/update-user.dto';
 
 import { LoginDto } from '../auth/dto/login.dto';
 import { RolesService } from '../roles/roles.service';
+import { FindUserByIdParamDto } from './dto/find-user-by-id.dto';
+import { FindUsersQueryDto } from './dto/find-users.dto';
+import paginationHelper from 'src/helpers/pagination.helper';
+import sortHelper from 'src/helpers/sort.helper';
 
 @Injectable()
 export class UsersService {
@@ -40,6 +44,32 @@ export class UsersService {
   async create({ doc }: { doc: User }) {
     const newUser = new this.userModel(doc);
     return await newUser.save();
+  }
+
+  async countDocuments({ filter }: { filter: RootFilterQuery<User> }) {
+    filter['isDeleted'] = false;
+
+    return await this.userModel.countDocuments(filter);
+  }
+
+  async find({
+    filter,
+    sort,
+    skip,
+    limit,
+  }: {
+    filter: RootFilterQuery<User>;
+    sort?: { [key: string]: mongoose.SortOrder };
+    skip?: number;
+    limit?: number;
+  }) {
+    filter['isDeleted'] = false;
+
+    return await this.userModel
+      .find(filter)
+      .sort(sort)
+      .skip(skip || 0)
+      .limit(limit || 20);
   }
 
   async findOne({ filter }: { filter: mongoose.RootFilterQuery<User> }) {
@@ -107,15 +137,6 @@ export class UsersService {
     });
   }
 
-  // GET /v1/users/:id
-  async findById(id: string): Promise<User> {
-    const user = await this.userModel.findById(id).exec();
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
   // PATCH /v1/users/update/:id
   async updateUser(
     user: LoginDto,
@@ -170,5 +191,68 @@ export class UsersService {
     }
 
     return {};
+  }
+
+  // GET /v1/users/find/:id
+  async findUserById(param: FindUserByIdParamDto) {
+    const { id } = param;
+
+    const userExists = await this.findOne({ filter: { _id: id } });
+    if (!userExists) {
+      throw new NotFoundException('User id not found');
+    }
+
+    return userExists;
+  }
+
+  // GET /v1/users/find?filter?={fullName?, birthday?, gender?, roleId?, sortBy?, sortOrder?}&page?&limit?
+  async findUsers(query: FindUsersQueryDto) {
+    const { filter, page, limit } = query;
+    const filterOptions: {
+      fullName?: RegExp;
+      birthday?: RegExp;
+      gender?: RegExp;
+      roleId?: RegExp;
+    } = {};
+
+    let sort = {};
+    const pagination = paginationHelper(page, limit);
+
+    if (filter) {
+      const { fullName, birthday, gender, roleId, sortBy, sortOrder } = filter;
+
+      if (fullName) {
+        filterOptions.fullName = new RegExp(fullName as string, 'i');
+      }
+      if (birthday) {
+        filterOptions.birthday = new RegExp(birthday as string, 'i');
+      }
+      if (gender) {
+        filterOptions.gender = new RegExp(gender as string, 'i');
+      }
+      if (roleId) {
+        filterOptions.roleId = new RegExp(roleId as string, 'i');
+      }
+
+      sort = sortHelper(sortBy as string, sortOrder as string);
+    }
+
+    const [total, users] = await Promise.all([
+      this.countDocuments({ filter: filterOptions }),
+      this.find({
+        filter: filterOptions,
+        sort,
+        skip: pagination.skip,
+        limit: pagination.limit,
+      }),
+    ]);
+    return {
+      users: {
+        total,
+        page,
+        limit,
+        items: users,
+      },
+    };
   }
 }

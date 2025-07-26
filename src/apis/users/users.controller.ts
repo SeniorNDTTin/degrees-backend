@@ -6,13 +6,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
-import { plainToInstance } from 'class-transformer';
-
 import { UsersService } from './users.service';
-import { ViewUserDto } from './dto/view-user.dto';
 import { User } from './decorators/user.decorator';
 import { CreateUserBodyDto } from './dto/create-user.dto';
 import { DeleteUserParamDto } from './dto/delete-user.dto';
@@ -20,6 +18,8 @@ import { UpdateUserBodyDto, UpdateUserParamDto } from './dto/update-user.dto';
 
 import { LoginDto } from '../auth/dto/login.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { FindUsersQueryDto } from './dto/find-users.dto';
+import { FindUserByIdParamDto } from './dto/find-user-by-id.dto';
 
 @Controller({
   path: '/users',
@@ -50,11 +50,15 @@ export class UsersController {
     return await this.usersService.deleteUser(user, param);
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const user = await this.usersService.findById(id);
-    return plainToInstance(ViewUserDto, user, {
-      excludeExtraneousValues: true,
-    });
+  @Get('/find')
+  @UseGuards(JwtAuthGuard)
+  async findUsers(@Query() query: FindUsersQueryDto) {
+    return await this.usersService.findUsers(query);
+  }
+
+  @Get('/find/:id')
+  @UseGuards(JwtAuthGuard)
+  async findUserById(@Param() param: FindUserByIdParamDto) {
+    return await this.usersService.findUserById(param);
   }
 }
