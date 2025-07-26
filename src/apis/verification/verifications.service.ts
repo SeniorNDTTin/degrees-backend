@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
@@ -24,6 +25,8 @@ import { LoginDto } from '../auth/dto/login.dto';
 import paginationHelper from 'src/helpers/pagination.helper';
 import sortHelper from 'src/helpers/sort.helper';
 import sendMailHelper from 'src/helpers/sendMail.helper';
+import { UsersService } from '../users/users.service';
+import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class VerificationsService {
@@ -35,6 +38,8 @@ export class VerificationsService {
     private readonly degreeModel: mongoose.Model<Degree>,
     @InjectModel(Certificate.name)
     private readonly certificateModel: mongoose.Model<Certificate>,
+
+    private readonly usersService: UsersService,
   ) {}
 
   async create({ doc }: { doc: Verification }) {
@@ -84,7 +89,33 @@ export class VerificationsService {
     });
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.usersService.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   async createVerification(user: LoginDto, body: CreateVerificationBodyDto) {
+    const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'create-verification',
+    });
+
     const doc: any = {
       ...body,
       status: false,
@@ -142,6 +173,12 @@ export class VerificationsService {
     param: UpdateVerificationParamDto,
     body: UpdateVerificationBodyDto,
   ) {
+    const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'update-verification',
+    });
+
     //Tìm bản ghi Verification
     const verification = await this.findOne({ filter: { _id: param.id } });
     if (!verification) throw new NotFoundException('Verification not found');
@@ -237,6 +274,12 @@ export class VerificationsService {
   }
 
   async deleteVerification(user: LoginDto, param: DeleteVerificationParamDto) {
+    const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'delete-verification',
+    });
+
     const deleted = await this.findOneAndUpdate({
       filter: { _id: param.id },
       update: {

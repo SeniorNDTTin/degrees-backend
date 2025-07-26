@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
 import sortHelper from 'src/helpers/sort.helper';
@@ -17,12 +21,15 @@ import { CreateVerifierBodyDto } from './dto/create-verfier.dto';
 import { FindVerifiersQueryDto } from './dto/find-verifiers.dto';
 import { DeleteVerifierParamDto } from './dto/delete-verifier.dto';
 import { FindVerifierByIdParamDto } from './dto/find-verifier-by-id.dto';
+import { UsersService } from '../users/users.service';
+import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class VerifiersService {
   constructor(
     @InjectModel(Verifier.name)
     private readonly verifierModel: mongoose.Model<Verifier>,
+    private readonly usersService: UsersService,
   ) {}
 
   async create({ doc }: { doc: Verifier }) {
@@ -78,9 +85,34 @@ export class VerifiersService {
     return await this.verifierModel.findOneAndUpdate(filter, update);
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.usersService.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   // POST /v1/verifiers/create
   async createVerifier(user: LoginDto, body: CreateVerifierBodyDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'create-verififier',
+    });
+
     const { verifierName, organization, verifierEmail } = body;
 
     return await this.create({
@@ -100,6 +132,11 @@ export class VerifiersService {
     body: UpdateVerifierBodyDto,
   ) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'update-verififier',
+    });
+
     const { id } = param;
     const { verifierName, organization, verifierEmail } = body;
 
@@ -122,6 +159,11 @@ export class VerifiersService {
   // DELETE /v1/verifier/delete/:id
   async deleteVerifier(user: LoginDto, param: DeleteVerifierParamDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'delete-verififier',
+    });
+
     const { id } = param;
 
     const verifierExists = await this.findOneAndUpdate({

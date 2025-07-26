@@ -12,6 +12,7 @@ import {
   Certificate,
   CertificateSchema,
 } from '../certificates/schemas/certificate.schema';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -20,6 +21,8 @@ import {
       { name: Degree.name, schema: DegreeSchema },
       { name: Certificate.name, schema: CertificateSchema },
     ]),
+
+    UsersModule,
   ],
   providers: [VerificationsService],
   controllers: [VerificationsController],

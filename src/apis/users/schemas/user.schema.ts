@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 import { EUserGender } from '../enums/user-gender.enum';
+import { Role } from 'src/apis/roles/schemas/role.schema';
 
 export type UserDocument = mongoose.HydratedDocument<User>;
 
@@ -25,6 +26,13 @@ export class User {
 
   @Prop({ type: String, enum: Object.values(EUserGender), required: true })
   gender: string;
+
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: Role.name,
+    required: true,
+  })
+  roleId: mongoose.Types.ObjectId;
 
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };
