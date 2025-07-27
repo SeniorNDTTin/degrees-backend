@@ -229,15 +229,12 @@ export class IssuingAgenciesService {
       sort = sortHelper(sortBy as string, sortOrder as string);
     }
 
-    const [total, issuingAgencies] = (await Promise.all([
-      this.issuingAgencyModel.countDocuments(filterOptions),
-      this.issuingAgencyModel
-        .find(filterOptions)
-        .sort(sort)
-        .skip(pagination.skip)
-        .limit(pagination.limit)
-        .lean(),
-    ])) as [number, IssuingAgencyDocument[]];
+    const total = await this.issuingAgencyModel.countDocuments(filterOptions);
+    const issuingAgencies = await this.issuingAgencyModel
+      .find(filterOptions)
+      .sort(sort)
+      .skip(pagination.skip)
+      .limit(pagination.limit);
 
     return {
       issuingAgencies: {

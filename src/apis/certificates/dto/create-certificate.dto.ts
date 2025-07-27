@@ -25,10 +25,6 @@ export class CreateCertificateBodyDto {
 
   @IsString()
   @IsNotEmpty()
-  status: string;
-
-  @IsString()
-  @IsNotEmpty()
   studentEmail: string;
 
   @IsString()

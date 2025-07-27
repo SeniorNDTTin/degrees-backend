@@ -30,10 +30,6 @@ export class UpdateCertificateBodyDto {
 
   @IsString()
   @IsOptional()
-  status?: string;
-
-  @IsString()
-  @IsOptional()
   studentEmail?: string;
 
   @IsString()

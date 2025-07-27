@@ -33,9 +33,6 @@ export class Verification {
   @Prop({ type: String, required: true })
   description: string;
 
-  @Prop({ type: Boolean, default: false })
-  status: boolean;
-
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };
 
