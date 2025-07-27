@@ -183,38 +183,6 @@ export class VerificationsService {
     const verification = await this.findOne({ filter: { _id: param.id } });
     if (!verification) throw new NotFoundException('Verification not found');
 
-    // Kiểm tra thông tin sinh viên với Degree
-    if (verification.type === 'degree') {
-      const degree = await this.degreeModel.findById(verification.degreeId);
-      if (!degree) throw new NotFoundException('Degree not found');
-
-      if (
-        degree.studentEmail.trim().toLowerCase() !==
-        body.studentEmail.trim().toLowerCase()
-      ) {
-        throw new BadRequestException(
-          'Email sinh viên không khớp với bằng cấp',
-        );
-      }
-    }
-
-    // Kiểm tra với Certificate
-    if (verification.type === 'certificate') {
-      const certificate = await this.certificateModel.findById(
-        verification.certificateId,
-      );
-      if (!certificate) throw new NotFoundException('Certificate not found');
-
-      if (
-        certificate.studentEmail.trim().toLowerCase() !==
-        body.studentEmail.trim().toLowerCase()
-      ) {
-        throw new BadRequestException(
-          'Email sinh viên không khớp với chứng chỉ',
-        );
-      }
-    }
-
     // Cập nhật bản ghi xác minh
     const updated = await this.findOneAndUpdate({
       filter: { _id: param.id },
@@ -228,21 +196,20 @@ export class VerificationsService {
 
     if (!updated) throw new NotFoundException('Verification not found');
 
-    // Gửi mail
-    let studentEmail: string | undefined;
-    if (body.studentEmail) {
-      studentEmail = body.studentEmail;
-    } else if (updated.type === 'degree' && updated.degreeId) {
-      const degree = await this.degreeModel.findById(updated.degreeId);
-      if (degree) {
-        studentEmail = degree.studentEmail;
+    let studentEmail = '';
+    if (body.type === 'degree') {
+      const degreeExists = await this.degreeModel.findOne({
+        _id: body.degreeId,
+      });
+      if (degreeExists) {
+        studentEmail = degreeExists.studentEmail;
       }
-    } else if (updated.type === 'certificate' && updated.certificateId) {
-      const certificate = await this.certificateModel.findById(
-        updated.certificateId,
-      );
-      if (certificate) {
-        studentEmail = certificate.studentEmail;
+    } else {
+      const certificateExists = await this.certificateModel.findOne({
+        _id: body.certificateId,
+      });
+      if (certificateExists) {
+        studentEmail = certificateExists.studentEmail;
       }
     }
 
@@ -340,10 +307,10 @@ export class VerificationsService {
 
     if (filter) {
       const { type, verifierId, status, sortBy, sortOrder } = filter;
-      if (type) filterOptions.type = type;
-      if (verifierId) filterOptions.verifierId = verifierId;
-      if (typeof status !== 'undefined') filterOptions.status = status;
-      sort = sortHelper(sortBy, sortOrder);
+      if (type) filterOptions.type = type as string;
+      if (verifierId) filterOptions.verifierId = verifierId as string;
+      if (typeof status !== 'undefined') filterOptions.status = status as string;
+      sort = sortHelper(sortBy as string, sortOrder as string);
     }
 
     const [total, items] = await Promise.all([

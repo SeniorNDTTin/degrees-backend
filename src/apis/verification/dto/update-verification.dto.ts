@@ -14,10 +14,6 @@ export class UpdateVerificationParamDto {
 }
 
 export class UpdateVerificationBodyDto {
-  @IsOptional()
-  @IsEmail()
-  studentEmail: string;
-
   @IsEnum(['degree', 'certificate'])
   @IsOptional()
   type?: 'degree' | 'certificate';
@@ -37,8 +33,4 @@ export class UpdateVerificationBodyDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  status?: boolean;
 }

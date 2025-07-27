@@ -108,15 +108,8 @@ export class CertificatesService {
     const { userId } = user;
     await this.checkPermissions({ userId, permission: 'create-certificate' });
 
-    const {
-      title,
-      score,
-      scoreDetails,
-      issuedDate,
-      status,
-      studentEmail,
-      issuerID,
-    } = body;
+    const { title, score, scoreDetails, issuedDate, studentEmail, issuerID } =
+      body;
 
     const studentSignature = this.jwtService.sign(
       { userId },
@@ -132,7 +125,7 @@ export class CertificatesService {
       score,
       scoreDetails: scoreDetails || '',
       issuedDate: new Date(issuedDate),
-      status,
+      status: 'pending',
       studentEmail,
       issuerID,
       studentSignature,
@@ -151,15 +144,8 @@ export class CertificatesService {
     await this.checkPermissions({ userId, permission: 'update-certificate' });
 
     const { id } = param;
-    const {
-      title,
-      score,
-      scoreDetails,
-      issuedDate,
-      status,
-      studentEmail,
-      issuerID,
-    } = body;
+    const { title, score, scoreDetails, issuedDate, studentEmail, issuerID } =
+      body;
 
     // Filter out undefined fields and ensure type safety
     const updateFields: Partial<Certificate> = {};
@@ -168,7 +154,6 @@ export class CertificatesService {
     if (scoreDetails !== undefined) updateFields.scoreDetails = scoreDetails;
     if (issuedDate !== undefined)
       updateFields.issuedDate = new Date(issuedDate);
-    if (status !== undefined) updateFields.status = status;
     if (studentEmail !== undefined) updateFields.studentEmail = studentEmail;
     if (issuerID !== undefined) updateFields.issuerID = issuerID;
 

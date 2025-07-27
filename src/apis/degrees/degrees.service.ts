@@ -3,7 +3,11 @@ import mongoose, { RootFilterQuery } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
@@ -104,7 +108,7 @@ export class DegreesService {
   // POST /v1/degrees/create
   async createDegree(user: LoginDto, body: CreateDegreeBodyDto) {
     const { userId } = user;
-    await this.checkPermissions({ userId, permission: 'create-degreee' });
+    await this.checkPermissions({ userId, permission: 'create-degree' });
 
     const {
       degreeName,
@@ -112,7 +116,6 @@ export class DegreesService {
       GPA,
       classification,
       issuedDate,
-      status,
       studentEmail,
       issuerID,
     } = body;
@@ -133,7 +136,7 @@ export class DegreesService {
         GPA,
         classification,
         issuedDate,
-        status,
+        status: 'pending',
         studentEmail,
         issuerID,
         studentSignature,
@@ -149,7 +152,7 @@ export class DegreesService {
     body: UpdateDegreeDto,
   ) {
     const { userId } = user;
-    await this.checkPermissions({ userId, permission: 'update-degreee' });
+    await this.checkPermissions({ userId, permission: 'update-degree' });
 
     const { id } = param;
 
@@ -172,7 +175,7 @@ export class DegreesService {
 
   async deleteDegree(user: LoginDto, param: DeleteDegreeParamDto) {
     const { userId } = user;
-    await this.checkPermissions({ userId, permission: 'delete-degreee' });
+    await this.checkPermissions({ userId, permission: 'delete-degree' });
 
     const { id } = param;
 
