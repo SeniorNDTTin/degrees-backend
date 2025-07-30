@@ -1,32 +1,34 @@
-// src/apis/verifications/verifications.service.ts
+import mongoose from 'mongoose';
+import * as QRCode from 'qrcode';
+import { RootFilterQuery } from 'mongoose';
+
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose from 'mongoose';
+
+import sortHelper from 'src/helpers/sort.helper';
+import sendMailHelper from 'src/helpers/sendMail.helper';
+import paginationHelper from 'src/helpers/pagination.helper';
+
+import { LoginDto } from '../auth/dto/login.dto';
+import { Role } from '../roles/schemas/role.schema';
+import { UsersService } from '../users/users.service';
 import { Degree } from '../degrees/schemas/degree.schema';
 import { Certificate } from '../certificates/schemas/certificate.schema';
-import { RootFilterQuery } from 'mongoose';
 
-import { Verification } from './schemas/verification.schema';
-import { CreateVerificationBodyDto } from './dto/create-verification.dto';
 import {
   UpdateVerificationBodyDto,
   UpdateVerificationParamDto,
 } from './dto/update-verification.dto';
+import { Verification } from './schemas/verification.schema';
+import { FindVerificationsQueryDto } from './dto/find-verifications.dto';
+import { CreateVerificationBodyDto } from './dto/create-verification.dto';
 import { DeleteVerificationParamDto } from './dto/delete-verification.dto';
 import { FindVerificationByIdParamDto } from './dto/find-verification-by-id.dto';
-import { FindVerificationsQueryDto } from './dto/find-verifications.dto';
-
-import { LoginDto } from '../auth/dto/login.dto';
-import paginationHelper from 'src/helpers/pagination.helper';
-import sortHelper from 'src/helpers/sort.helper';
-import sendMailHelper from 'src/helpers/sendMail.helper';
-import { UsersService } from '../users/users.service';
-import { Role } from '../roles/schemas/role.schema';
+import { IssuingAgenciesService } from '../issuing-agencies/issuing-agencies.service';
 
 @Injectable()
 export class VerificationsService {
@@ -38,6 +40,8 @@ export class VerificationsService {
     private readonly degreeModel: mongoose.Model<Degree>,
     @InjectModel(Certificate.name)
     private readonly certificateModel: mongoose.Model<Certificate>,
+
+    private readonly issuingAgenciesService: IssuingAgenciesService,
 
     private readonly usersService: UsersService,
   ) {}
@@ -118,52 +122,115 @@ export class VerificationsService {
 
     const doc: any = {
       ...body,
-      status: false,
       isDeleted: false,
       createdBy: { userId: user.userId, createdAt: new Date() },
     };
 
-    const newVerification = this.create({ doc: doc as Verification });
+    const newVerification = await this.create({ doc: doc as Verification });
 
     // Gửi mail
     let studentEmail: string | undefined;
+    let hash = '';
+
     if (body.type === 'degree' && body.degreeId) {
-      const degree = await this.degreeModel.findById(body.degreeId);
+      const degree = await this.degreeModel.findOneAndUpdate(
+        { _id: body.degreeId },
+        { status: 'success' },
+      );
       if (degree) {
         studentEmail = degree.studentEmail;
+        hash = degree.degreeHash;
+
+        const date = new Date(degree.issuedDate);
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+        const issuerExists = await this.issuingAgenciesService.findOne({
+          filter: { _id: degree.issuerID },
+        });
+
+        const qrContent = `Tên bằng cấp: ${degree.degreeName}\nChuyên ngành: ${degree.major}\nĐiểm GPA: ${degree.GPA}\nXếp loại: ${degree.classification}\nNgày phát hành: ${formattedDate}\nTrạng thái ${degree.status}\nEmail sở hữu: ${degree.studentEmail}\nTên nhà phát hành: ${issuerExists?.name}\nEmail nhà phát hành: ${issuerExists?.email}\nChuỗi băm: ${degree.degreeHash}`;
+        let qrCode = '';
+
+        QRCode.toString(
+          qrContent,
+          {
+            errorCorrectionLevel: 'H',
+            type: 'svg',
+          },
+          function (err, data) {
+            if (err) throw err;
+
+            qrCode = data;
+          },
+        );
+
+        await this.degreeModel.findOneAndUpdate(
+          { _id: body.degreeId },
+          { qrCode },
+        );
       }
     } else if (body.type === 'certificate' && body.certificateId) {
-      const certificate = await this.certificateModel.findById(
-        body.certificateId,
+      const certificate = await this.certificateModel.findOneAndUpdate(
+        { _id: body.certificateId },
+        { status: 'success' },
       );
       if (certificate) {
         studentEmail = certificate.studentEmail;
+        hash = certificate.certificateHash;
+
+        const date = new Date(certificate.issuedDate);
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+        const issuerExists = await this.issuingAgenciesService.findOne({
+          filter: { _id: certificate.issuerID },
+        });
+
+        const qrContent = `Tiêu đề chứng chỉ: ${certificate.title}\nKỉ lục: ${certificate.score}\nChi tiết kỉ lục: ${certificate.scoreDetails}\nNgày phát hành: ${formattedDate}\nTrạng thái ${certificate.status}\nEmail sở hữu: ${certificate.studentEmail}\nTên nhà phát hành: ${issuerExists?.name}\nEmail nhà phát hành: ${issuerExists?.email}\nChuỗi băm: ${certificate.certificateHash}`;
+        let qrCode = '';
+
+        QRCode.toString(
+          qrContent,
+          {
+            errorCorrectionLevel: 'H',
+            type: 'svg',
+          },
+          function (err, data) {
+            if (err) throw err;
+
+            qrCode = data;
+          },
+        );
+
+        await this.certificateModel.findOneAndUpdate(
+          { _id: body.degreeId },
+          { qrCode },
+        );
       }
     }
 
-    if (studentEmail) {
-      try {
-        await sendMailHelper({
-          email: studentEmail,
-          subject: 'Thông báo: Yêu cầu xác minh mới',
-          html: `
+    sendMailHelper({
+      email: studentEmail as string,
+      subject: 'HTQL Văn Bằng Và Chứng Chỉ: Xác minh thành công!',
+      html: `
             <h1>Xin chào</h1>
-            <p>Một yêu cầu xác minh mới đã được tạo cho bạn.</p>
+            <p>Giấy tờ của bạn đã được xác minh.</p>
             <p><strong>Chi tiết:</strong></p>
             <ul>
-              <li><strong>ID xác minh:</strong> ${(await newVerification)._id}</li>
-              <li><strong>Loại tài liệu:</strong> ${body.type === 'degree' ? 'Bằng cấp' : 'Chứng chỉ'}</li>
-              <li><strong>Mô tả:</strong> ${body.description}</li>
-              <li><strong>Người xác minh (ID):</strong> ${body.verifierId}</li>
-              <li><strong>Trạng thái:</strong> Chưa xác minh</li>
+              <li><strong>ID xác minh:</strong> ${newVerification.id}</li>
+              <li><strong>Chuỗi băm giấy tờ:</strong> ${hash}</li>
+              <li><strong>Trạng thái chứng chỉ:</strong> Thành công</li>
             </ul>
-            <p>Vui lòng liên hệ quản trị viên nếu có thắc mắc.</p>
+
+            <p>Vui lòng viếng thăm website: <a href="http://localhost:5173/client-login">Tại đây</a>.</p>
+            <p>Sau đó đăng nhập với tài khoản google của email này để xem chi tiết.</p>
           `,
-        });
-      } catch (error) {
-        console.error('Lỗi gửi email:', error);
-      }
-    }
+    });
 
     return newVerification;
   }
@@ -227,7 +294,6 @@ export class VerificationsService {
               <li><strong>Loại tài liệu:</strong> ${updated.type === 'degree' ? 'Bằng cấp' : 'Chứng chỉ'}</li>
               <li><strong>Mô tả:</strong> ${updated.description}</li>
               <li><strong>Người xác minh (ID):</strong> ${updated.verifierId}</li>
-              <li><strong>Trạng thái:</strong> ${updated.status ? 'Đã xác minh' : 'Chưa xác minh'}</li>
             </ul>
             <p>Vui lòng liên hệ quản trị viên nếu có thắc mắc.</p>
           `,
@@ -259,42 +325,45 @@ export class VerificationsService {
 
     // Gửi mail
     let studentEmail: string | undefined;
+    let hash = '';
+
     if (deleted.type === 'degree' && deleted.degreeId) {
-      const degree = await this.degreeModel.findById(deleted.degreeId);
+      const degree = await this.degreeModel.findOneAndUpdate(
+        { _id: deleted.degreeId },
+        { status: 'revoke', qrCode: 'n' },
+      );
       if (degree) {
         studentEmail = degree.studentEmail;
+        hash = degree.degreeHash;
       }
     } else if (deleted.type === 'certificate' && deleted.certificateId) {
-      const certificate = await this.certificateModel.findById(
-        deleted.certificateId,
+      const certificate = await this.certificateModel.findOneAndUpdate(
+        { _id: deleted.certificateId },
+        { status: 'revoke', qrCode: 'n' },
       );
       if (certificate) {
         studentEmail = certificate.studentEmail;
+        hash = certificate.certificateHash;
       }
     }
 
-    if (studentEmail) {
-      try {
-        await sendMailHelper({
-          email: studentEmail,
-          subject: 'Thông báo: Yêu cầu xác minh đã bị xóa',
-          html: `
+    sendMailHelper({
+      email: studentEmail as string,
+      subject: 'HTQL Văn Bằng Và Chứng Chỉ: Xác minh Bị Thu Hồi!',
+      html: `
             <h1>Xin chào</h1>
-            <p>Yêu cầu xác minh của bạn đã bị xóa.</p>
+            <p>Giấy tờ của bạn đã bị thu hồi xác minh.</p>
             <p><strong>Chi tiết:</strong></p>
             <ul>
-              <li><strong>ID xác minh:</strong> ${deleted._id}</li>
-              <li><strong>Loại tài liệu:</strong> ${deleted.type === 'degree' ? 'Bằng cấp' : 'Chứng chỉ'}</li>
-              <li><strong>Mô tả:</strong> ${deleted.description}</li>
-              <li><strong>Người xác minh (ID):</strong> ${deleted.verifierId}</li>
+              <li><strong>ID xác minh:</strong> ${param.id}</li>
+              <li><strong>Chuỗi băm giấy tờ:</strong> ${hash}</li>
+              <li><strong>Trạng thái chứng chỉ:</strong> Thu hồi</li>
             </ul>
-            <p>Vui lòng liên hệ quản trị viên nếu có thắc mắc.</p>
+            
+            <p>Vui lòng viếng thăm website: <a href="http://localhost:5173/client-login">Tại đây</a>.</p>
+            <p>Sau đó đăng nhập với tài khoản google của email này để xem chi tiết.</p>
           `,
-        });
-      } catch (error) {
-        console.error('Lỗi gửi email:', error);
-      }
-    }
+    });
 
     return {};
   }
@@ -306,10 +375,9 @@ export class VerificationsService {
     let sort = {};
 
     if (filter) {
-      const { type, verifierId, status, sortBy, sortOrder } = filter;
+      const { type, verifierId, sortBy, sortOrder } = filter;
       if (type) filterOptions.type = type as string;
       if (verifierId) filterOptions.verifierId = verifierId as string;
-      if (typeof status !== 'undefined') filterOptions.status = status as string;
       sort = sortHelper(sortBy as string, sortOrder as string);
     }
 

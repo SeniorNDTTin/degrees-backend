@@ -31,10 +31,10 @@ export class Certificate {
   issuerID: string;
 
   @Prop({ type: String, required: true })
-  studentSignature: string;
+  certificateHash: string;
 
-  @Prop({ type: String, required: true })
-  issuerSignature: string;
+  @Prop({ type: String })
+  qrCode?: string;
 
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };

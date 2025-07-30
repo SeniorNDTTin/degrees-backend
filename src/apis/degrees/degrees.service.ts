@@ -1,18 +1,19 @@
 import mongoose, { RootFilterQuery } from 'mongoose';
 
-import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { ConfigService } from '@nestjs/config';
 import {
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
 
 import { LoginDto } from '../auth/dto/login.dto';
+import { Role } from '../roles/schemas/role.schema';
 import { UsersService } from '../users/users.service';
 
 import { Degree } from './schemas/degree.schema';
@@ -21,7 +22,8 @@ import { FindDegreesQueryDto } from './dto/find-degrees.dto';
 import { CreateDegreeBodyDto } from './dto/create-degree.dto';
 import { DeleteDegreeParamDto } from './dto/delete-degree.dto';
 import { FindDegreeByIdParamDto } from './dto/find-degree-by-id.dto';
-import { Role } from '../roles/schemas/role.schema';
+import { FindDegreeByDegreeHashParamDto } from './dto/find-degree-by-degree-hash.dto';
+import { IssuingAgenciesService } from '../issuing-agencies/issuing-agencies.service';
 
 @Injectable()
 export class DegreesService {
@@ -31,6 +33,7 @@ export class DegreesService {
     private readonly configService: ConfigService,
     @InjectModel(Degree.name)
     private readonly degreeModel: mongoose.Model<Degree>,
+    private readonly issuingAgenciesService: IssuingAgenciesService,
   ) {}
 
   async create({ doc }: { doc: Partial<Degree> }) {
@@ -120,16 +123,7 @@ export class DegreesService {
       issuerID,
     } = body;
 
-    const studentSignature = this.jwtService.sign(
-      { userId },
-      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
-    );
-    const issuerSignature = this.jwtService.sign(
-      { issuerID },
-      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
-    );
-
-    return this.create({
+    const newDegree = await this.create({
       doc: {
         degreeName,
         major,
@@ -139,10 +133,19 @@ export class DegreesService {
         status: 'pending',
         studentEmail,
         issuerID,
-        studentSignature,
-        issuerSignature,
+        degreeHash: 'n',
         createdBy: { userId, createdAt: new Date() },
       },
+    });
+
+    const degreeHash = this.jwtService.sign(
+      { degreeId: newDegree.id as string },
+      { privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
+    );
+
+    return await this.findOneAndUpdate({
+      filter: { _id: newDegree.id },
+      update: { degreeHash },
     });
   }
 
@@ -245,5 +248,31 @@ export class DegreesService {
     }
 
     return degreeExists;
+  }
+
+  // GET /v1/degrees/find/by/degree-hash/:degreeHash
+  async findDegreeByDegreeHash(
+    user: LoginDto,
+    param: FindDegreeByDegreeHashParamDto,
+  ) {
+    const { email } = user;
+    const { degreeHash } = param;
+
+    const degreeExists = await this.findOne({
+      filter: { degreeHash, studentEmail: email },
+    });
+    if (!degreeExists) {
+      throw new NotFoundException('Degree hash not found');
+    }
+
+    const issuingAgencyExists = await this.issuingAgenciesService.findOne({
+      filter: { _id: degreeExists.issuerID },
+    });
+    console.log(issuingAgencyExists);
+
+    const result: any = degreeExists.toObject();
+    result['issuingAgencyName'] = issuingAgencyExists?.name;
+
+    return result;
   }
 }

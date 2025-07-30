@@ -23,6 +23,7 @@ import {
   UpdateCertificateBodyDto,
   UpdateCertificateParamDto,
 } from './dto/update-certificate.dto';
+import { FindCertificateByCertificateHashParamDto } from './dto/find-certificate-by-certificate-hash.dto';
 
 @Controller({
   path: '/certificates',
@@ -69,5 +70,17 @@ export class CertificatesController {
   @UseGuards(JwtAuthGuard)
   async findCertificateById(@Param() param: FindCertificateByIdParamDto) {
     return await this.certificatesService.findCertificateById(param);
+  }
+
+  @Get('/find/by/certificate-hash/:certificateHash')
+  @UseGuards(JwtAuthGuard)
+  async findCertificateByCertificateHash(
+    @User() user: LoginDto,
+    @Param() param: FindCertificateByCertificateHashParamDto,
+  ) {
+    return await this.certificatesService.findCertificateByCertificateHash(
+      user,
+      param,
+    );
   }
 }

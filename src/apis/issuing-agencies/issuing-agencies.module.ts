@@ -17,7 +17,7 @@ import { UsersModule } from '../users/users.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('SIGNATURE_SECRET', ''),
+        secret: configService.get<string>('ACCESS_TOKEN_SECRET', ''),
       }),
     }),
 

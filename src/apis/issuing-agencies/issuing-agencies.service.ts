@@ -136,7 +136,7 @@ export class IssuingAgenciesService {
 
     const publicKey = this.jwtService.sign(
       { issuingAgencyId: newIssuingAgency.id as string },
-      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+      { privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
     );
 
     return await this.findOneAndUpdate({
