@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { DegreesService } from './degrees.service';
 import { DegreesController } from './degrees.controller';
 import { Degree, DegreeSchema } from './schemas/degree.schema';
+import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.module';
 
 @Module({
   imports: [
@@ -15,13 +16,14 @@ import { Degree, DegreeSchema } from './schemas/degree.schema';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('SIGNATURE_SECRET', ''),
+        secret: configService.get<string>('ACCESS_TOKEN_SECRET', ''),
       }),
     }),
 
     MongooseModule.forFeature([{ name: Degree.name, schema: DegreeSchema }]),
 
     UsersModule,
+    IssuingAgenciesModule,
   ],
   controllers: [DegreesController],
   providers: [DegreesService],

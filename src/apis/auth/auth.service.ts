@@ -13,6 +13,7 @@ import { Auth } from './schemas/auth.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import generateOTPHelper from 'src/helpers/generateOTP.helper';
 import { ValidateOTPBodyDto } from './dto/validateOTP.dto';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -91,5 +92,25 @@ export class AuthService {
         },
       ),
     };
+  }
+
+  // GET /v1/auth/google/redirect
+  googleAuthRedirect(req: Request, res: Response) {
+    const { email } = req.user as { email: string };
+
+    const accessToken = this.jwtService.sign(
+      { email },
+      {
+        privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET', ''),
+        expiresIn: this.configService.get<string>(
+          'ACCESS_TOKEN_EXPIRES_IN',
+          '1d',
+        ),
+      },
+    );
+
+    res.redirect(
+      `http://localhost:5173/client-login?accessToken=${accessToken}`,
+    );
   }
 }

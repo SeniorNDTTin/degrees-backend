@@ -7,6 +7,7 @@ import { CertificatesService } from './certificates.service';
 import { CertificatesController } from './certificates.controller';
 import { Certificate, CertificateSchema } from './schemas/certificate.schema';
 import { UsersModule } from '../users/users.module';
+import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.module';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { UsersModule } from '../users/users.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('SIGNATURE_SECRET', ''),
+        secret: configService.get<string>('ACCESS_TOKEN_SECRET', ''),
       }),
     }),
 
@@ -23,6 +24,7 @@ import { UsersModule } from '../users/users.module';
     ]),
 
     UsersModule,
+    IssuingAgenciesModule,
   ],
   controllers: [CertificatesController],
   providers: [CertificatesService],
