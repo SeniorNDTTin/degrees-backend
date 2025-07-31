@@ -124,11 +124,28 @@ export class IssuingAgenciesService {
 
     const { name, email, location, isUniversity } = body;
 
+    // Kiểm tra email và tên đã tồn tại chưa
+    const existingAgencyByEmail = await this.findOne({
+      filter: { email: email.toLowerCase() }
+    });
+
+    if (existingAgencyByEmail) {
+      throw new ForbiddenException('Email đã được sử dụng bởi cơ sở cấp bằng khác');
+    }
+
+    const existingAgencyByName = await this.findOne({
+      filter: { name: name.trim() }
+    });
+
+    if (existingAgencyByName) {
+      throw new ForbiddenException('Tên cơ sở đã tồn tại');
+    }
+
     const newIssuingAgency = await this.create({
       doc: {
-        name,
-        email,
-        location,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        location: location.trim(),
         isUniversity,
         createdBy: { userId, createdAt: new Date() },
       },
@@ -160,23 +177,49 @@ export class IssuingAgenciesService {
     const { id } = param;
     const { name, email, location, isUniversity } = body;
 
-    const issuingAgencyExists = await this.findOneAndUpdate({
+    // Kiểm tra cơ sở cấp bằng tồn tại
+    const currentAgency = await this.findOne({ filter: { _id: id } });
+    if (!currentAgency) {
+      throw new NotFoundException('Không tìm thấy thông tin cơ sở cấp bằng');
+    }
+
+    // Kiểm tra email trùng lặp (nếu có thay đổi email)
+    if (email && email.toLowerCase() !== currentAgency.email) {
+      const existingAgencyByEmail = await this.findOne({
+        filter: { email: email.toLowerCase(), _id: { $ne: id } }
+      });
+
+      if (existingAgencyByEmail) {
+        throw new ForbiddenException('Email đã được sử dụng bởi cơ sở cấp bằng khác');
+      }
+    }
+
+    // Kiểm tra tên trùng lặp (nếu có thay đổi tên)
+    if (name && name.trim() !== currentAgency.name) {
+      const existingAgencyByName = await this.findOne({
+        filter: { name: name.trim(), _id: { $ne: id } }
+      });
+
+      if (existingAgencyByName) {
+        throw new ForbiddenException('Tên cơ sở đã tồn tại');
+      }
+    }
+
+    // Cập nhật thông tin
+    const updatedAgency = await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
-        name,
-        email,
-        location,
-        isUniversity,
+        ...(name && { name: name.trim() }),
+        ...(email && { email: email.toLowerCase().trim() }),
+        ...(location && { location: location.trim() }),
+        ...(typeof isUniversity !== 'undefined' && { isUniversity }),
         $push: {
           updatedBy: { userId, updateAt: new Date() },
         },
       },
     });
-    if (!issuingAgencyExists) {
-      throw new NotFoundException('Issuing Agency id not found');
-    }
 
-    return issuingAgencyExists;
+    return updatedAgency;
   }
 
   // DELETE  /v1/issuing-agency/delete/:id
@@ -211,7 +254,10 @@ export class IssuingAgenciesService {
       email?: RegExp;
       location?: RegExp;
       isUniversity?: boolean;
-    } = {};
+      isDeleted: boolean;
+    } = {
+      isDeleted: false
+    };
     let sort = {};
     const pagination = paginationHelper(page, limit);
 
