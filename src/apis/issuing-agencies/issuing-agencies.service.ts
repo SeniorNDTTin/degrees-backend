@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -6,14 +7,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { RootFilterQuery } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-<<<<<<< HEAD
-=======
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
->>>>>>> 54d7854 (update)
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
@@ -24,12 +17,9 @@ import { CreateIssuingAgencyBodyDto } from './dto/create-issuing-agency.dto';
 import { DeleteIssuingAgencyParamDto } from './dto/delete-issuing-agency.dto';
 import { FindIssuingAgenciesQueryDto } from './dto/find-issuing-agencies.dto';
 import { FindIssuingAgencyByIdParamDto } from './dto/find-issuing-agency-by-id.dto';
-<<<<<<< HEAD
 import { UpdateIssuingAgencyBodyDto, UpdateIssuingAgencyParamDto } from './dto/update-issuing-agency.dto';
-=======
 import { UsersService } from '../users/users.service';
 import { Role } from '../roles/schemas/role.schema';
->>>>>>> 54d7854 (update)
 
 @Injectable()
 export class IssuingAgenciesService {
@@ -87,14 +77,6 @@ export class IssuingAgenciesService {
     });
   }
 
-<<<<<<< HEAD
-  async createIssuingAgency(user: LoginDto, body: CreateIssuingAgencyBodyDto) {
-    const doc: any = {
-      ...body,
-      isDeleted: false,
-      createdBy: { userId: user.userId, createdAt: new Date() },
-    };
-=======
   async checkPermissions({
     userId,
     permission,
@@ -123,8 +105,11 @@ export class IssuingAgenciesService {
       permission: 'create-issuing-agency',
     });
 
-    const { name, email, location, isUniversity } = body;
->>>>>>> 54d7854 (update)
+    const doc: any = {
+      ...body,
+      isDeleted: false,
+      createdBy: { userId, createdAt: new Date() },
+    };
 
     const newIssuingAgency = await this.create({ doc: doc as IssuingAgency });
 
@@ -144,10 +129,6 @@ export class IssuingAgenciesService {
     param: UpdateIssuingAgencyParamDto,
     body: UpdateIssuingAgencyBodyDto,
   ) {
-<<<<<<< HEAD
-    const updated = await this.findOneAndUpdate({
-      filter: { _id: param.id },
-=======
     const { userId } = user;
     await this.checkPermissions({
       userId,
@@ -155,11 +136,9 @@ export class IssuingAgenciesService {
     });
 
     const { id } = param;
-    const { name, email, location, isUniversity } = body;
 
-    const issuingAgencyExists = await this.findOneAndUpdate({
+    const updated = await this.findOneAndUpdate({
       filter: { _id: id },
->>>>>>> 54d7854 (update)
       update: {
         ...body,
         $push: {
@@ -173,15 +152,6 @@ export class IssuingAgenciesService {
     return updated;
   }
 
-<<<<<<< HEAD
-  async deleteIssuingAgency(user: LoginDto, param: DeleteIssuingAgencyParamDto) {
-    const deleted = await this.findOneAndUpdate({
-      filter: { _id: param.id },
-      update: {
-        isDeleted: true,
-        deletedBy: { userId: user.userId, deletedAt: new Date() },
-      },
-=======
   // DELETE  /v1/issuing-agency/delete/:id
   async deleteIssuingAgency(
     user: LoginDto,
@@ -195,10 +165,12 @@ export class IssuingAgenciesService {
 
     const { id } = param;
 
-    const issuingAgencyExists = await this.findOneAndUpdate({
+    const deleted = await this.findOneAndUpdate({
       filter: { _id: id },
-      update: { isDeleted: true, deletedBy: { userId, deleteAt: new Date() } },
->>>>>>> 54d7854 (update)
+      update: {
+        isDeleted: true,
+        deletedBy: { userId, deletedAt: new Date() },
+      },
     });
 
     if (!deleted) throw new NotFoundException('Issuing Agency not found');
