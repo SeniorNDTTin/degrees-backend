@@ -71,6 +71,7 @@ export class UsersService {
 
     return await this.userModel
       .find(filter)
+      .populate({ path: 'roleId', select: 'name permissions' })
       .sort(sort)
       .skip(skip || 0)
       .limit(limit || 20);
@@ -194,14 +195,24 @@ export class UsersService {
       hashedPassword = await this.hashPassword({ password });
     }
 
-    const usersExists = await this.findOneAndUpdate({
+    // Kiểm tra roleId có tồn tại không
+    if (roleId) {
+      const roleExists = await this.rolesService.findOne({
+        filter: { _id: roleId },
+      });
+      if (!roleExists) {
+        throw new NotFoundException('Role id not found');
+      }
+    }
+
+    await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
-        fullName,
-        email,
-        birthday,
-        gender,
-        roleId: new mongoose.Types.ObjectId(roleId),
+        ...(fullName && { fullName }),
+        ...(email && { email }),
+        ...(birthday && { birthday }),
+        ...(gender && { gender }),
+        ...(roleId && { roleId: new mongoose.Types.ObjectId(roleId) }),
         ...(hashedPassword && { password: hashedPassword }),
         $push: {
           updatedBy: { userId, updatedAt: new Date() },
@@ -209,11 +220,16 @@ export class UsersService {
       },
     });
 
-    if (!usersExists) {
+    // Sau khi update, lấy lại user đã populate roleId
+    const updatedUser = await this.findOne({ 
+      filter: { _id: id }, 
+      populate: [{ path: 'roleId', select: 'name permissions' }] 
+    });
+    if (!updatedUser) {
       throw new NotFoundException('User id not found');
     }
 
-    return usersExists;
+    return updatedUser;
   }
 
   // DELETE /v1/users/delete/:id
@@ -241,7 +257,11 @@ export class UsersService {
   async findUserById(param: FindUserByIdParamDto) {
     const { id } = param;
 
-    const userExists = await this.findOne({ filter: { _id: id } });
+    // Thêm populate: 'roleId' để lấy thông tin vai trò
+        const userExists = await this.findOne({ 
+      filter: { _id: id }, 
+      populate: [{ path: 'roleId', select: 'name permissions' }] 
+    }); 
     if (!userExists) {
       throw new NotFoundException('User id not found');
     }

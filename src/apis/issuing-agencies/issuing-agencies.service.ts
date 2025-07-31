@@ -211,6 +211,7 @@ export class IssuingAgenciesService {
       email?: RegExp;
       location?: RegExp;
       isUniversity?: boolean;
+      isDeleted?: boolean;
     } = {};
     let sort = {};
     const pagination = paginationHelper(page, limit);
@@ -228,6 +229,8 @@ export class IssuingAgenciesService {
 
       sort = sortHelper(sortBy as string, sortOrder as string);
     }
+    // Thêm điều kiện này để chỉ lấy bản ghi chưa bị xóa
+    filterOptions.isDeleted = false;
 
     const total = await this.issuingAgencyModel.countDocuments(filterOptions);
     const issuingAgencies = await this.issuingAgencyModel
