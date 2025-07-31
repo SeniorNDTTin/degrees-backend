@@ -146,6 +146,8 @@ export class UsersService {
 
   // POST /v1/users/create
   async createUser(user: LoginDto, body: CreateUserBodyDto) {
+    console.log('Creating user with data:', { ...body, password: '***' });
+    
     const { userId } = user;
     await this.checkPermissions({
       userId,
@@ -154,24 +156,104 @@ export class UsersService {
 
     const { fullName, email, password, birthday, gender, roleId } = body;
 
-    const roleExists = await this.rolesService.findOne({
-      filter: { _id: roleId },
-    });
-    if (!roleExists) {
-      throw new NotFoundException('Role id not found');
+    // Validate required fields
+    if (!fullName?.trim()) {
+      throw new ForbiddenException('Tên không được để trống');
     }
 
-    return await this.create({
-      doc: {
-        fullName,
-        email,
-        password: await this.hashPassword({ password }),
-        birthday,
-        gender,
-        roleId: new mongoose.Types.ObjectId(roleId),
-        createdBy: { userId, createdAt: new Date() },
-      },
+    if (!email?.trim()) {
+      throw new ForbiddenException('Email không được để trống');
+    }
+
+    if (!password?.trim()) {
+      throw new ForbiddenException('Mật khẩu không được để trống');
+    }
+
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new ForbiddenException('Email không hợp lệ');
+    }
+
+    // Validate password format (at least 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character)
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+      throw new ForbiddenException('Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const existingUser = await this.findOne({ 
+      filter: { email: email.toLowerCase() }
     });
+    if (existingUser) {
+      throw new ForbiddenException('Email đã được sử dụng');
+    }
+
+    // Validate roleId
+    if (!roleId) {
+      throw new ForbiddenException('Vai trò không được để trống');
+    }
+
+    try {
+      const roleExists = await this.rolesService.findOne({
+        filter: { _id: roleId },
+      });
+      if (!roleExists) {
+        throw new NotFoundException('Vai trò không tồn tại');
+      }
+
+      const hashedPassword = await this.hashPassword({ password });
+      console.log('Role exists:', roleExists);
+
+      // Validate birthday
+      if (!birthday) {
+        throw new ForbiddenException('Ngày sinh không được để trống');
+      }
+
+      // Validate gender
+      if (!gender) {
+        throw new ForbiddenException('Giới tính không được để trống');
+      }
+
+      // Convert birthday string to Date object
+      let birthdayDate: Date;
+      try {
+        birthdayDate = new Date(birthday);
+        if (isNaN(birthdayDate.getTime())) {
+          throw new Error('Invalid date');
+        }
+      } catch (error) {
+        throw new ForbiddenException('Ngày sinh không hợp lệ');
+      }
+
+      // Check if birthday is in the future
+      if (birthdayDate > new Date()) {
+        throw new ForbiddenException('Ngày sinh không thể là ngày trong tương lai');
+      }
+
+      const newUser = await this.create({
+        doc: {
+          fullName: fullName.trim(),
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+          birthday: birthdayDate,
+          gender,
+          roleId: new mongoose.Types.ObjectId(roleId),
+          createdBy: { userId, createdAt: new Date() },
+          isDeleted: false,
+        } as User,
+      });
+
+      console.log('User created successfully:', { ...newUser.toObject(), password: '***' });
+      return newUser;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      if (error instanceof ForbiddenException || error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error.code === 11000) {
+        throw new ForbiddenException('Email đã được sử dụng');
+      }
+      throw new ForbiddenException('Có lỗi xảy ra khi tạo người dùng');
+    }
   }
 
   // PATCH /v1/users/update/:id

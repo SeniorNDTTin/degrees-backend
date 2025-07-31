@@ -1,4 +1,4 @@
-import mongoose, { Promise, RootFilterQuery } from 'mongoose';
+import mongoose, { RootFilterQuery } from 'mongoose';
 
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -116,6 +116,9 @@ export class IssuingAgenciesService {
 
   // POST /v1/issuing-agency/create
   async createIssuingAgency(user: LoginDto, body: CreateIssuingAgencyBodyDto) {
+    console.log('Creating issuing agency with data:', body);
+    console.log('User:', user);
+    
     const { userId } = user;
     await this.checkPermissions({
       userId,
@@ -124,25 +127,54 @@ export class IssuingAgenciesService {
 
     const { name, email, location, isUniversity } = body;
 
-    const newIssuingAgency = await this.create({
-      doc: {
-        name,
-        email,
-        location,
-        isUniversity,
-        createdBy: { userId, createdAt: new Date() },
-      },
+    // Validate email format
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new ForbiddenException('Invalid email format');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const existingAgency = await this.findOne({
+      filter: { email: email.toLowerCase() }
     });
+    if (existingAgency) {
+      throw new ForbiddenException('Email đã được sử dụng');
+    }
+
+    // Validate other fields
+    if (!name || !name.trim()) {
+      throw new ForbiddenException('Tên không được để trống');
+    }
+    if (!location || !location.trim()) {
+      throw new ForbiddenException('Địa chỉ không được để trống');
+    }
+
+    const doc = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      location: location.trim(),
+      isUniversity: Boolean(isUniversity),
+      createdBy: { userId, createdAt: new Date() },
+      isDeleted: false,
+    } as IssuingAgency;
+
+    console.log('Creating with doc:', doc);
+
+    const newIssuingAgency = await this.create({ doc });
+    console.log('Created issuing agency:', newIssuingAgency);
 
     const publicKey = this.jwtService.sign(
       { issuingAgencyId: newIssuingAgency.id as string },
-      { privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
+      { secret: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
     );
+    console.log('Generated public key');
 
-    return await this.findOneAndUpdate({
+    const updatedAgency = await this.findOneAndUpdate({
       filter: { _id: newIssuingAgency.id },
       update: { publicKey },
     });
+    console.log('Updated agency with public key');
+
+    return updatedAgency;
   }
 
   // PATH /v1/issuing-agency/update/:id
@@ -205,52 +237,75 @@ export class IssuingAgenciesService {
 
   // GET /vi/issuing-agencies/find?filter?={name?, email?, location?, publicKey?, isUniversity?, sortBy?, sortOrder?}&page?&limit?
   async findIssuingAgencies(query: FindIssuingAgenciesQueryDto) {
-    const { filter, page, limit } = query;
-    const filterOptions: {
-      name?: RegExp;
-      email?: RegExp;
-      location?: RegExp;
-      isUniversity?: boolean;
-      isDeleted?: boolean;
-    } = {};
-    let sort = {};
-    const pagination = paginationHelper(page, limit);
+    try {
+      console.log('Finding issuing agencies with query:', query);
+      
+      const { filter, page, limit } = query;
+      const filterOptions: {
+        name?: RegExp;
+        email?: RegExp;
+        location?: RegExp;
+        isUniversity?: boolean;
+        isDeleted?: boolean;
+      } = {};
+      let sort = {};
+      const pagination = paginationHelper(page, limit);
 
-    if (filter) {
-      const { name, email, location, isUniversity, sortBy, sortOrder } = filter;
+      if (filter) {
+        const { name, email, location, isUniversity, sortBy, sortOrder } = filter;
 
-      if (name) filterOptions.name = new RegExp(name as string, 'i');
-      if (email) filterOptions.email = new RegExp(email as string, 'i');
-      if (location)
-        filterOptions.location = new RegExp(location as string, 'i');
-      if (isUniversity !== undefined) {
-        filterOptions.isUniversity = isUniversity === 'true';
+        if (name) filterOptions.name = new RegExp(name as string, 'i');
+        if (email) filterOptions.email = new RegExp(email as string, 'i');
+        if (location)
+          filterOptions.location = new RegExp(location as string, 'i');
+        if (isUniversity !== undefined) {
+          filterOptions.isUniversity = isUniversity === 'true';
+        }
+
+        sort = sortHelper(sortBy as string, sortOrder as string);
       }
+      
+      // Thêm điều kiện này để chỉ lấy bản ghi chưa bị xóa
+      filterOptions.isDeleted = false;
 
-      sort = sortHelper(sortBy as string, sortOrder as string);
+      console.log('Filter options:', filterOptions);
+      console.log('Sort:', sort);
+      console.log('Pagination:', pagination);
+
+      const [total, issuingAgencies] = await Promise.all([
+        this.issuingAgencyModel.countDocuments(filterOptions),
+        this.issuingAgencyModel
+          .find(filterOptions)
+          .sort(sort)
+          .skip(pagination.skip)
+          .limit(pagination.limit)
+      ]);
+
+      console.log('Found total:', total);
+      console.log('Found agencies:', issuingAgencies);
+
+      const result = {
+        issuingAgencies: {
+          total,
+          page: Number(page) || 1,
+          limit: Number(limit) || 20,
+          items: issuingAgencies.map(agency => ({
+            ...agency.toObject(),
+            _id: agency._id.toString()
+          })),
+        },
+      };
+      
+      console.log('Returning result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error finding issuing agencies:', error);
+      throw error;
     }
-    // Thêm điều kiện này để chỉ lấy bản ghi chưa bị xóa
-    filterOptions.isDeleted = false;
-
-    const total = await this.issuingAgencyModel.countDocuments(filterOptions);
-    const issuingAgencies = await this.issuingAgencyModel
-      .find(filterOptions)
-      .sort(sort)
-      .skip(pagination.skip)
-      .limit(pagination.limit);
-
-    return {
-      issuingAgencies: {
-        total,
-        page,
-        limit,
-        items: issuingAgencies,
-      },
-    };
   }
 
   // GET /v1/issuing-agency/find/:id
-  async findIssuingAgencyById(param: FindIssuingAgencyByIdParamDto) {
+  async findIssuingAgencyById(param: FindIssuingAgencyByIdParamDto): Promise<IssuingAgency> {
     const { id } = param;
 
     const issuingAgencyExists = await this.findOne({ filter: { _id: id } });
