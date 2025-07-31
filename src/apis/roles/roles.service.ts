@@ -1,7 +1,13 @@
 import mongoose, { RootFilterQuery } from 'mongoose';
 
 import { InjectModel } from '@nestjs/mongoose';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
@@ -14,10 +20,13 @@ import { CreateRoleBodyDto } from './dto/create-role.dto';
 import { DeleteRoleParamDto } from './dto/delete-role.dto';
 import { FindRoleByIdParamDto } from './dto/find-role-by-id.dto';
 import { UpdateRoleBodyDto, UpdateRoleParamDto } from './dto/update-role.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class RolesService {
   constructor(
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
     @InjectModel(Role.name) private readonly roleModel: mongoose.Model<Role>,
   ) {}
 
@@ -73,9 +82,34 @@ export class RolesService {
     });
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.usersService.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   // POST /v1/roles/create
   async createRole(user: LoginDto, body: CreateRoleBodyDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'create-role',
+    });
+
     const { name, description, permissions } = body;
 
     return this.create({
@@ -95,6 +129,11 @@ export class RolesService {
     body: UpdateRoleBodyDto,
   ) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'update-role',
+    });
+
     const { id } = param;
     const { name, description, permissions } = body;
 
@@ -119,6 +158,11 @@ export class RolesService {
   // DELETE /v1/roles/delete/:id
   async deleteRole(user: LoginDto, param: DeleteRoleParamDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'delete-role',
+    });
+
     const { id } = param;
 
     const roleExists = await this.findOneAndUpdate({

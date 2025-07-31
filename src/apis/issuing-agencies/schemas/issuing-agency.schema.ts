@@ -5,7 +5,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 export type IssuingAgencyDocument = mongoose.HydratedDocument<IssuingAgency>;
 
 @Schema({
-  collection: 'issuing-agency',
+  collection: 'issuing-agencies',
   timestamps: true,
 })
 export class IssuingAgency {

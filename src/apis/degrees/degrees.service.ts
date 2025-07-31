@@ -3,12 +3,13 @@ import mongoose, { RootFilterQuery } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
 
 import { LoginDto } from '../auth/dto/login.dto';
+import { UsersService } from '../users/users.service';
 
 import { Degree } from './schemas/degree.schema';
 import { UpdateDegreeDto } from './dto/update-degree.dto';
@@ -16,11 +17,13 @@ import { FindDegreesQueryDto } from './dto/find-degrees.dto';
 import { CreateDegreeBodyDto } from './dto/create-degree.dto';
 import { DeleteDegreeParamDto } from './dto/delete-degree.dto';
 import { FindDegreeByIdParamDto } from './dto/find-degree-by-id.dto';
+import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class DegreesService {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     @InjectModel(Degree.name)
     private readonly degreeModel: mongoose.Model<Degree>,
@@ -78,9 +81,31 @@ export class DegreesService {
     });
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.usersService.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   // POST /v1/degrees/create
   async createDegree(user: LoginDto, body: CreateDegreeBodyDto) {
     const { userId } = user;
+    await this.checkPermissions({ userId, permission: 'create-degreee' });
+
     const {
       degreeName,
       major,
@@ -124,6 +149,8 @@ export class DegreesService {
     body: UpdateDegreeDto,
   ) {
     const { userId } = user;
+    await this.checkPermissions({ userId, permission: 'update-degreee' });
+
     const { id } = param;
 
     const degreeExists = await this.findOneAndUpdate({
@@ -145,6 +172,8 @@ export class DegreesService {
 
   async deleteDegree(user: LoginDto, param: DeleteDegreeParamDto) {
     const { userId } = user;
+    await this.checkPermissions({ userId, permission: 'delete-degreee' });
+
     const { id } = param;
 
     const degreeExists = await this.findOneAndUpdate({

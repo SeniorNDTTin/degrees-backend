@@ -1,9 +1,11 @@
 import {
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import mongoose, { RootFilterQuery } from 'mongoose';
+import mongoose, { PopulateOptions, RootFilterQuery } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 
@@ -18,10 +20,12 @@ import { FindUserByIdParamDto } from './dto/find-user-by-id.dto';
 import { FindUsersQueryDto } from './dto/find-users.dto';
 import paginationHelper from 'src/helpers/pagination.helper';
 import sortHelper from 'src/helpers/sort.helper';
+import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class UsersService {
   constructor(
+    @Inject(forwardRef(() => RolesService))
     private readonly rolesService: RolesService,
     @InjectModel(User.name) private readonly userModel: mongoose.Model<User>,
   ) {}
@@ -72,10 +76,16 @@ export class UsersService {
       .limit(limit || 20);
   }
 
-  async findOne({ filter }: { filter: mongoose.RootFilterQuery<User> }) {
+  async findOne({
+    filter,
+    populate,
+  }: {
+    filter: mongoose.RootFilterQuery<User>;
+    populate?: PopulateOptions | (string | PopulateOptions)[];
+  }) {
     filter['isDeleted'] = false;
 
-    return await this.userModel.findOne(filter);
+    return await this.userModel.findOne(filter).populate(populate || []);
   }
 
   async findOneAndUpdate({
@@ -113,9 +123,34 @@ export class UsersService {
     return { success: true, userExists };
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   // POST /v1/users/create
   async createUser(user: LoginDto, body: CreateUserBodyDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'create-user',
+    });
+
     const { fullName, email, password, birthday, gender, roleId } = body;
 
     const roleExists = await this.rolesService.findOne({
@@ -132,6 +167,7 @@ export class UsersService {
         password: await this.hashPassword({ password }),
         birthday,
         gender,
+        roleId: new mongoose.Types.ObjectId(roleId),
         createdBy: { userId, createdAt: new Date() },
       },
     });
@@ -144,6 +180,11 @@ export class UsersService {
     body: UpdateUserBodyDto,
   ): Promise<User> {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'update-user',
+    });
+
     const { id } = param;
     const { fullName, email, password, birthday, gender, roleId } = body;
 
@@ -160,15 +201,13 @@ export class UsersService {
         email,
         birthday,
         gender,
-        roleId,
+        roleId: new mongoose.Types.ObjectId(roleId),
         ...(hashedPassword && { password: hashedPassword }),
         $push: {
           updatedBy: { userId, updatedAt: new Date() },
         },
       },
     });
-
-    console.log(body);
 
     if (!usersExists) {
       throw new NotFoundException('User id not found');
@@ -180,6 +219,11 @@ export class UsersService {
   // DELETE /v1/users/delete/:id
   async deleteUser(user: LoginDto, param: DeleteUserParamDto) {
     const { userId } = user;
+    await this.checkPermissions({
+      userId,
+      permission: 'delete-user',
+    });
+
     const { id } = param;
 
     const userExists = await this.findOneAndUpdate({

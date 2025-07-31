@@ -9,6 +9,7 @@ import {
 } from './schemas/issuing-agency.schema';
 import { IssuingAgenciesService } from './issuing-agencies.service';
 import { IssuingAgenciesController } from './issuing-agencies.controller';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -23,6 +24,8 @@ import { IssuingAgenciesController } from './issuing-agencies.controller';
     MongooseModule.forFeature([
       { name: IssuingAgency.name, schema: IssuingAgencySchema },
     ]),
+
+    UsersModule,
   ],
   controllers: [IssuingAgenciesController],
   providers: [IssuingAgenciesService],

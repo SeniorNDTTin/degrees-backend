@@ -1,23 +1,30 @@
 import mongoose, { RootFilterQuery } from 'mongoose';
 
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
 
 import { LoginDto } from '../auth/dto/login.dto';
+import { UsersService } from '../users/users.service';
+
+import {
+  UpdateCertificateBodyDto,
+  UpdateCertificateParamDto,
+} from './dto/update-certificate.dto';
 import { Certificate } from './schemas/certificate.schema';
 import { FindCertificatesQueryDto } from './dto/find-certificates.dto';
 import { CreateCertificateBodyDto } from './dto/create-certificate.dto';
 import { DeleteCertificateParamDto } from './dto/delete-certificate.dto';
 import { FindCertificateByIdParamDto } from './dto/find-certificate-by-id.dto';
-import {
-  UpdateCertificateBodyDto,
-  UpdateCertificateParamDto,
-} from './dto/update-certificate.dto';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class CertificatesService {
@@ -26,6 +33,7 @@ export class CertificatesService {
     private readonly configService: ConfigService,
     @InjectModel(Certificate.name)
     private readonly certificateModel: mongoose.Model<Certificate>,
+    private readonly usersService: UsersService,
   ) {}
 
   async create({ doc }: { doc: Certificate }) {
@@ -76,8 +84,30 @@ export class CertificatesService {
     });
   }
 
+  async checkPermissions({
+    userId,
+    permission,
+  }: {
+    userId: string;
+    permission: string;
+  }) {
+    const userExists = await this.usersService.findOne({
+      filter: { _id: userId },
+      populate: [{ path: 'roleId', select: 'permissions' }],
+    });
+    if (!userExists) {
+      throw new ForbiddenException();
+    }
+    const { permissions } = userExists.roleId as unknown as Role;
+    if (!permissions.includes(permission)) {
+      throw new ForbiddenException();
+    }
+  }
+
   async createCertificate(user: LoginDto, body: CreateCertificateBodyDto) {
     const { userId } = user;
+    await this.checkPermissions({ userId, permission: 'create-certificate' });
+
     const {
       title,
       score,
@@ -118,6 +148,8 @@ export class CertificatesService {
     body: UpdateCertificateBodyDto,
   ) {
     const { userId } = user;
+    await this.checkPermissions({ userId, permission: 'update-certificate' });
+
     const { id } = param;
     const {
       title,
@@ -158,6 +190,8 @@ export class CertificatesService {
 
   async deleteCertificate(user: LoginDto, param: DeleteCertificateParamDto) {
     const { userId } = user;
+    await this.checkPermissions({ userId, permission: 'delete-certificate' });
+
     const { id } = param;
 
     const certificateExists = await this.findOneAndUpdate({
