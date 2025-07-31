@@ -25,10 +25,6 @@ export class CreateDegreeBodyDto {
   @IsDateString()
   issuedDate: Date;
 
-  @IsString()
-  @IsNotEmpty()
-  status: string;
-
   @IsEmail()
   studentEmail: string;
 

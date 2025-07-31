@@ -1,25 +1,33 @@
+import mongoose, { RootFilterQuery } from 'mongoose';
+
+import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import {
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { RootFilterQuery } from 'mongoose';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 
 import sortHelper from 'src/helpers/sort.helper';
 import paginationHelper from 'src/helpers/pagination.helper';
 
 import { LoginDto } from '../auth/dto/login.dto';
-import { IssuingAgency, IssuingAgencyDocument } from './schemas/issuing-agency.schema';
+import { UsersService } from '../users/users.service';
+import { Role } from '../roles/schemas/role.schema';
+
+import {
+  IssuingAgency,
+  IssuingAgencyDocument,
+} from './schemas/issuing-agency.schema';
+import {
+  UpdateIssuingAgencyBodyDto,
+  UpdateIssuingAgencyParamDto,
+} from './dto/update-issuing-agency.dto';
 import { CreateIssuingAgencyBodyDto } from './dto/create-issuing-agency.dto';
 import { DeleteIssuingAgencyParamDto } from './dto/delete-issuing-agency.dto';
 import { FindIssuingAgenciesQueryDto } from './dto/find-issuing-agencies.dto';
 import { FindIssuingAgencyByIdParamDto } from './dto/find-issuing-agency-by-id.dto';
-import { UpdateIssuingAgencyBodyDto, UpdateIssuingAgencyParamDto } from './dto/update-issuing-agency.dto';
-import { UsersService } from '../users/users.service';
-import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class IssuingAgenciesService {
@@ -28,52 +36,54 @@ export class IssuingAgenciesService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     @InjectModel(IssuingAgency.name)
-    private readonly model: mongoose.Model<IssuingAgencyDocument>,
+    private readonly issuingAgencyModel: mongoose.Model<IssuingAgencyDocument>,
   ) {}
 
   async create({ doc }: { doc: IssuingAgency }) {
-    return new this.model(doc).save();
+    const newIssuingAgency = new this.issuingAgencyModel(doc);
+    return await newIssuingAgency.save();
   }
 
   async countDocuments({ filter }: { filter: RootFilterQuery<IssuingAgency> }) {
     filter['isDeleted'] = false;
-    return this.model.countDocuments(filter);
+    return await this.issuingAgencyModel.countDocuments(filter);
   }
 
   async find({
     filter,
-    sort = {},
-    skip = 0,
-    limit = 20,
+    sort,
+    skip,
+    limit,
   }: {
-    filter: mongoose.FilterQuery<IssuingAgency>;
+    filter: RootFilterQuery<IssuingAgency>;
     sort?: { [key: string]: mongoose.SortOrder };
     skip?: number;
     limit?: number;
   }) {
-    filter.isDeleted = false;
-    return this.model.find(filter).sort(sort).skip(skip).limit(limit).lean();
+    filter['isDeleted'] = false;
+    return await this.issuingAgencyModel
+      .find(filter)
+      .sort(sort)
+      .skip(skip || 0)
+      .limit(limit || 20);
   }
 
-  async findOne({ filter }: { filter: RootFilterQuery<IssuingAgency> }) {
+  async findOne({ filter }: { filter: mongoose.RootFilterQuery<IssuingAgency> }) {
     filter['isDeleted'] = false;
-    return this.model.findOne(filter).lean();
+    return await this.issuingAgencyModel.findOne(filter);
   }
 
   async findOneAndUpdate({
     filter,
     update,
-    options = {},
   }: {
-    filter: RootFilterQuery<IssuingAgency>;
+    filter: mongoose.RootFilterQuery<IssuingAgency>;
     update: mongoose.UpdateQuery<IssuingAgency>;
-    options?: mongoose.QueryOptions;
   }) {
     filter['isDeleted'] = false;
-    return this.model.findOneAndUpdate(filter, update, {
+    return await this.issuingAgencyModel.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
-      ...options,
     });
   }
 
@@ -99,31 +109,68 @@ export class IssuingAgenciesService {
 
   // POST /v1/issuing-agency/create
   async createIssuingAgency(user: LoginDto, body: CreateIssuingAgencyBodyDto) {
+    console.log('Creating issuing agency with data:', body);
+    console.log('User:', user);
+    
     const { userId } = user;
     await this.checkPermissions({
       userId,
       permission: 'create-issuing-agency',
     });
 
-    const doc: any = {
-      ...body,
-      isDeleted: false,
-      createdBy: { userId, createdAt: new Date() },
-    };
+    const { name, email, location, isUniversity } = body;
 
-    const newIssuingAgency = await this.create({ doc: doc as IssuingAgency });
+    // Validate email format
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new ForbiddenException('Invalid email format');
+    }
+
+    // Kiểm tra email đã tồn tại chưa
+    const existingAgency = await this.findOne({
+      filter: { email: email.toLowerCase() }
+    });
+    if (existingAgency) {
+      throw new ForbiddenException('Email đã được sử dụng');
+    }
+
+    // Validate other fields
+    if (!name || !name.trim()) {
+      throw new ForbiddenException('Tên không được để trống');
+    }
+    if (!location || !location.trim()) {
+      throw new ForbiddenException('Địa chỉ không được để trống');
+    }
+
+    const doc = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      location: location.trim(),
+      isUniversity: Boolean(isUniversity),
+      createdBy: { userId, createdAt: new Date() },
+      isDeleted: false,
+    } as IssuingAgency;
+
+    console.log('Creating with doc:', doc);
+
+    const newIssuingAgency = await this.create({ doc });
+    console.log('Created issuing agency:', newIssuingAgency);
 
     const publicKey = this.jwtService.sign(
       { issuingAgencyId: newIssuingAgency.id as string },
-      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+      { secret: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
     );
+    console.log('Generated public key');
 
-    return this.findOneAndUpdate({
+    const updatedAgency = await this.findOneAndUpdate({
       filter: { _id: newIssuingAgency.id },
       update: { publicKey },
     });
+    console.log('Updated agency with public key');
+
+    return updatedAgency;
   }
 
+  // PATCH /v1/issuing-agency/update/:id
   async updateIssuingAgency(
     user: LoginDto,
     param: UpdateIssuingAgencyParamDto,
@@ -136,23 +183,28 @@ export class IssuingAgenciesService {
     });
 
     const { id } = param;
+    const { name, email, location, isUniversity } = body;
 
-    const updated = await this.findOneAndUpdate({
+    const issuingAgencyExists = await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
-        ...body,
+        name,
+        email,
+        location,
+        isUniversity,
         $push: {
-          updatedBy: { userId: user.userId, updatedAt: new Date() },
+          updatedBy: { userId, updateAt: new Date() },
         },
       },
     });
+    if (!issuingAgencyExists) {
+      throw new NotFoundException('Issuing Agency id not found');
+    }
 
-    if (!updated) throw new NotFoundException('Issuing Agency not found');
-
-    return updated;
+    return issuingAgencyExists;
   }
 
-  // DELETE  /v1/issuing-agency/delete/:id
+  // DELETE /v1/issuing-agency/delete/:id
   async deleteIssuingAgency(
     user: LoginDto,
     param: DeleteIssuingAgencyParamDto,
@@ -165,73 +217,90 @@ export class IssuingAgenciesService {
 
     const { id } = param;
 
-    const deleted = await this.findOneAndUpdate({
+    const issuingAgencyExists = await this.findOneAndUpdate({
       filter: { _id: id },
-      update: {
-        isDeleted: true,
-        deletedBy: { userId, deletedAt: new Date() },
-      },
+      update: { isDeleted: true, deletedBy: { userId, deleteAt: new Date() } },
     });
-
-    if (!deleted) throw new NotFoundException('Issuing Agency not found');
+    if (!issuingAgencyExists) {
+      throw new NotFoundException('Issuing Agency id not found');
+    }
 
     return {};
   }
 
+  // GET /v1/issuing-agencies/find
   async findIssuingAgencies(query: FindIssuingAgenciesQueryDto) {
-    const { filter, page = 1, limit = 20 } = query;
-    const filterOptions: any = {};
-    const pagination = paginationHelper(page, limit);
-    let sort = {};
+    try {
+      console.log('Finding issuing agencies with query:', query);
+      
+      const { filter, page, limit } = query;
+      const filterOptions: {
+        name?: RegExp;
+        email?: RegExp;
+        location?: RegExp;
+        isUniversity?: boolean;
+        isDeleted?: boolean;
+      } = {};
+      let sort = {};
+      const pagination = paginationHelper(page, limit);
 
-    if (filter) {
-      try {
-        const filterData = typeof filter === 'string' ? JSON.parse(filter) : filter;
-        const { name, email, location, isUniversity, sortBy, sortOrder } = filterData;
+      if (filter) {
+        const { name, email, location, isUniversity, sortBy, sortOrder } = filter;
 
-        if (name) filterOptions.name = new RegExp(String(name), 'i');
-        if (email) filterOptions.email = new RegExp(String(email), 'i');
-        if (location) filterOptions.location = new RegExp(String(location), 'i');
-        if (typeof isUniversity !== 'undefined') {
-          filterOptions.isUniversity = isUniversity === true || String(isUniversity).toLowerCase() === 'true';
+        if (name) filterOptions.name = new RegExp(name as string, 'i');
+        if (email) filterOptions.email = new RegExp(email as string, 'i');
+        if (location)
+          filterOptions.location = new RegExp(location as string, 'i');
+        if (isUniversity !== undefined) {
+          filterOptions.isUniversity = isUniversity === 'true';
         }
 
-        sort = sortHelper(sortBy, sortOrder);
-      } catch (error) {
-        console.error('Error parsing filter:', error);
+        sort = sortHelper(sortBy as string, sortOrder as string);
       }
-    }
+      
+      // Thêm điều kiện này để chỉ lấy bản ghi chưa bị xóa
+      filterOptions.isDeleted = false;
 
-    const [total, items] = await Promise.all([
-      this.countDocuments({ filter: filterOptions }),
-      this.find({
-        filter: filterOptions,
-        sort,
-        skip: pagination.skip,
-        limit: pagination.limit,
-      }),
-    ]);
+      console.log('Filter options:', filterOptions);
+      console.log('Sort:', sort);
+      console.log('Pagination:', pagination);
 
-    return {
-      data: {
+      const [total, issuingAgencies] = await Promise.all([
+        this.countDocuments({ filter: filterOptions }),
+        this.find({
+          filter: filterOptions,
+          sort,
+          skip: pagination.skip,
+          limit: pagination.limit,
+        }),
+      ]);
+
+      console.log('Found total:', total);
+      console.log('Found agencies:', issuingAgencies);
+
+      return {
         issuingAgencies: {
-          items: items.map(item => ({
-            ...item,
-            _id: item._id.toString()
-          })),
           total,
-          page,
-          limit
-        }
-      },
-      message: 'Success',
-      statusCode: 200
-    };
+          page: Number(page) || 1,
+          limit: Number(limit) || 20,
+          items: issuingAgencies,
+        },
+      };
+    } catch (error) {
+      console.error('Error finding issuing agencies:', error);
+      throw error;
+    }
   }
 
+  // GET /v1/issuing-agency/find/:id
   async findIssuingAgencyById(param: FindIssuingAgencyByIdParamDto) {
-    const found = await this.findOne({ filter: { _id: param.id } });
-    if (!found) throw new NotFoundException('Issuing Agency not found');
-    return found;
+    const { id } = param;
+
+    const issuingAgencyExists = await this.findOne({ filter: { _id: id } });
+    if (!issuingAgencyExists) {
+      throw new NotFoundException('Issuing Agency id not found');
+    }
+
+    return issuingAgencyExists;
   }
 }

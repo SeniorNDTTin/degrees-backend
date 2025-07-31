@@ -27,11 +27,11 @@ export class Degree extends Document {
   @Prop({ required: true })
   issuerID: string;
 
-  @Prop({ required: true })
-  studentSignature: string;
+  @Prop({ type: String, required: true })
+  degreeHash: string;
 
-  @Prop({ required: true })
-  issuerSignature: string;
+  @Prop({ type: String })
+  qrCode?: string;
 
   @Prop({ type: { userId: String, createdAt: Date }, required: true })
   createdBy: { userId: string; createdAt: Date };

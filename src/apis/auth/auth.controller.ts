@@ -1,12 +1,21 @@
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { LocalAuthGuard } from './guard/local-auth.guard';
 import { ValidateOTPBodyDto } from './dto/validateOTP.dto';
+import { GoogleOAuthGuard } from './guard/google-oauth.guard';
 
 @Controller({
   path: '/auth',
@@ -30,5 +39,18 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   checkAccessToken() {
     return { success: true };
+  }
+
+  @Get('/google')
+  @UseGuards(GoogleOAuthGuard)
+  async googleAuth() {}
+
+  @Get('/google/redirect')
+  @UseGuards(GoogleOAuthGuard)
+  googleAuthRedirect(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.googleAuthRedirect(req, res);
   }
 }

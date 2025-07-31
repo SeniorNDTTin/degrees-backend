@@ -39,7 +39,53 @@ export class IssuingAgenciesController {
     @User() user: LoginDto,
     @Body() body: CreateIssuingAgencyBodyDto,
   ) {
-    return await this.issuingAgenciesService.createIssuingAgency(user, body);
+    try {
+      console.log('Creating issuing agency, user:', user);
+      console.log('Request body:', body);
+      
+      // Validate email format
+      if (!body.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+        throw new Error('Invalid email format');
+      }
+
+      // Check if email already exists
+      const existingAgency = await this.issuingAgenciesService.findOne({
+        filter: { email: body.email }
+      });
+      if (existingAgency) {
+        throw new Error('Email already exists');
+      }
+
+      const result = await this.issuingAgenciesService.createIssuingAgency(user, body);
+      console.log('Create result:', result);
+      
+      return {
+        statusCode: 200,
+        message: 'Success',
+        data: result
+      };
+    } catch (error) {
+      console.error('Error in createIssuingAgency:', error);
+      
+      if (error.message === 'Invalid email format') {
+        return {
+          statusCode: 400,
+          message: 'Email không hợp lệ'
+        };
+      }
+      
+      if (error.message === 'Email already exists') {
+        return {
+          statusCode: 400,
+          message: 'Email đã được sử dụng'
+        };
+      }
+
+      return {
+        statusCode: 500,
+        message: error.message || 'Internal server error'
+      };
+    }
   }
 
   @Patch('/update/:id')

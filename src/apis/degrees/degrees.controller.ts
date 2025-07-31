@@ -20,6 +20,7 @@ import { UpdateDegreeDto } from './dto/update-degree.dto';
 import { FindDegreesQueryDto } from './dto/find-degrees.dto';
 import { DeleteDegreeParamDto } from './dto/delete-degree.dto';
 import { FindDegreeByIdParamDto } from './dto/find-degree-by-id.dto';
+import { FindDegreeByDegreeHashParamDto } from './dto/find-degree-by-degree-hash.dto';
 
 @Controller({
   path: '/degrees',
@@ -58,7 +59,11 @@ export class DegreesController {
 
   @Get('/find')
   @UseGuards(JwtAuthGuard)
-  async findDegrees(@Query() query: FindDegreesQueryDto) {
+  async findDegrees(
+    @User() user: LoginDto,
+    @Query() query: FindDegreesQueryDto,
+  ) {
+    console.log(user);
     return await this.degreesService.findDegrees(query);
   }
 
@@ -66,5 +71,14 @@ export class DegreesController {
   @UseGuards(JwtAuthGuard)
   async findDegreeById(@Param() param: FindDegreeByIdParamDto) {
     return await this.degreesService.findDegreeById(param);
+  }
+
+  @Get('/find/by/degree-hash/:degreeHash')
+  @UseGuards(JwtAuthGuard)
+  async findDegreeByDegreeHash(
+    @User() user: LoginDto,
+    @Param() param: FindDegreeByDegreeHashParamDto,
+  ) {
+    return await this.degreesService.findDegreeByDegreeHash(user, param);
   }
 }

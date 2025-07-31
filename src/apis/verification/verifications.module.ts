@@ -13,6 +13,10 @@ import {
   CertificateSchema,
 } from '../certificates/schemas/certificate.schema';
 import { UsersModule } from '../users/users.module';
+<<<<<<< HEAD
+=======
+import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.module';
+>>>>>>> main
 
 @Module({
   imports: [
@@ -23,6 +27,10 @@ import { UsersModule } from '../users/users.module';
     ]),
 
     UsersModule,
+<<<<<<< HEAD
+=======
+    IssuingAgenciesModule,
+>>>>>>> main
   ],
   providers: [VerificationsService],
   controllers: [VerificationsController],

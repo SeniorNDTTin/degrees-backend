@@ -40,5 +40,6 @@ export class CreateUserBodyDto {
   gender: string;
 
   @IsString()
+  @IsNotEmpty({ message: 'Vai trò không được để trống' })
   roleId: string;
 }

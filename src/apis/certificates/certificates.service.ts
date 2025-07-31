@@ -25,6 +25,8 @@ import { CreateCertificateBodyDto } from './dto/create-certificate.dto';
 import { DeleteCertificateParamDto } from './dto/delete-certificate.dto';
 import { FindCertificateByIdParamDto } from './dto/find-certificate-by-id.dto';
 import { Role } from '../roles/schemas/role.schema';
+import { FindCertificateByCertificateHashParamDto } from './dto/find-certificate-by-certificate-hash.dto';
+import { IssuingAgenciesService } from '../issuing-agencies/issuing-agencies.service';
 
 @Injectable()
 export class CertificatesService {
@@ -34,6 +36,7 @@ export class CertificatesService {
     @InjectModel(Certificate.name)
     private readonly certificateModel: mongoose.Model<Certificate>,
     private readonly usersService: UsersService,
+    private readonly issuingAgenciesService: IssuingAgenciesService,
   ) {}
 
   async create({ doc }: { doc: Certificate }) {
@@ -108,38 +111,31 @@ export class CertificatesService {
     const { userId } = user;
     await this.checkPermissions({ userId, permission: 'create-certificate' });
 
-    const {
-      title,
-      score,
-      scoreDetails,
-      issuedDate,
-      status,
-      studentEmail,
-      issuerID,
-    } = body;
+    const { title, score, scoreDetails, issuedDate, studentEmail, issuerID } = body;
 
-    const studentSignature = this.jwtService.sign(
-      { userId },
-      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
-    );
-    const issuerSignature = this.jwtService.sign(
-      { issuerID },
-      { privateKey: this.configService.get<string>('SIGNATURE_SECRET') },
+    const newCertificate = await this.create({
+      doc: {
+        title,
+        score,
+        scoreDetails: scoreDetails || '',
+        issuedDate: new Date(issuedDate),
+        status: 'pending',
+        studentEmail,
+        issuerID,
+        certificateHash: 'n',
+        createdBy: { userId, createdAt: new Date() },
+      },
+    });
+
+    const certificateHash = this.jwtService.sign(
+      { certificateId: newCertificate.id as string },
+      { privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
     );
 
-    const doc: Certificate = {
-      title,
-      score,
-      scoreDetails: scoreDetails || '',
-      issuedDate: new Date(issuedDate),
-      status,
-      studentEmail,
-      issuerID,
-      studentSignature,
-      issuerSignature,
-      createdBy: { userId, createdAt: new Date() },
-    };
-    return this.create({ doc });
+    return this.findOneAndUpdate({
+      filter: { _id: newCertificate.id },
+      update: { certificateHash },
+    });
   }
 
   async updateCertificate(
@@ -151,15 +147,7 @@ export class CertificatesService {
     await this.checkPermissions({ userId, permission: 'update-certificate' });
 
     const { id } = param;
-    const {
-      title,
-      score,
-      scoreDetails,
-      issuedDate,
-      status,
-      studentEmail,
-      issuerID,
-    } = body;
+    const { title, score, scoreDetails, issuedDate, studentEmail, issuerID } = body;
 
     // Filter out undefined fields and ensure type safety
     const updateFields: Partial<Certificate> = {};
@@ -168,7 +156,6 @@ export class CertificatesService {
     if (scoreDetails !== undefined) updateFields.scoreDetails = scoreDetails;
     if (issuedDate !== undefined)
       updateFields.issuedDate = new Date(issuedDate);
-    if (status !== undefined) updateFields.status = status;
     if (studentEmail !== undefined) updateFields.studentEmail = studentEmail;
     if (issuerID !== undefined) updateFields.issuerID = issuerID;
 
@@ -217,8 +204,7 @@ export class CertificatesService {
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { title, status, studentEmail, issuerID, sortBy, sortOrder } =
-        filter;
+      const { title, status, studentEmail, issuerID, sortBy, sortOrder } = filter;
 
       if (title) {
         filterOptions.title = new RegExp(title as string, 'i');
@@ -267,5 +253,30 @@ export class CertificatesService {
     }
 
     return certificateExists;
+  }
+
+  // GET /v1/certificates/find/by/certificate-hash/:certificateHash
+  async findCertificateByCertificateHash(
+    user: LoginDto,
+    param: FindCertificateByCertificateHashParamDto,
+  ) {
+    const { email } = user;
+    const { certificateHash } = param;
+
+    const certificateHashExists = await this.findOne({
+      filter: { certificateHash, studentEmail: email },
+    });
+    if (!certificateHashExists) {
+      throw new NotFoundException('Certificate hash not found');
+    }
+
+    const issuingAgencyExists = await this.issuingAgenciesService.findOne({
+      filter: { _id: certificateHashExists.issuerID },
+    });
+
+    const result: any = certificateHashExists.toObject();
+    result['issuingAgencyName'] = issuingAgencyExists?.name;
+
+    return result;
   }
 }
