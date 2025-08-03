@@ -9,6 +9,12 @@ import { DegreesService } from './degrees.service';
 import { DegreesController } from './degrees.controller';
 import { Degree, DegreeSchema } from './schemas/degree.schema';
 import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.module';
+import { BlocksModule } from '../blocks/blocks.module';
+import { VerificationsModule } from '../verification/verifications.module';
+import {
+  Verification,
+  VerificationSchema,
+} from '../verification/schemas/verification.schema';
 
 @Module({
   imports: [
@@ -20,10 +26,14 @@ import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.modu
       }),
     }),
 
-    MongooseModule.forFeature([{ name: Degree.name, schema: DegreeSchema }]),
+    MongooseModule.forFeature([
+      { name: Degree.name, schema: DegreeSchema },
+      { name: Verification.name, schema: VerificationSchema },
+    ]),
 
     UsersModule,
     IssuingAgenciesModule,
+    BlocksModule,
   ],
   controllers: [DegreesController],
   providers: [DegreesService],

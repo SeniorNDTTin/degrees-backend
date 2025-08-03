@@ -12,6 +12,7 @@ import { IssuingAgenciesModule } from './apis/issuing-agencies/issuing-agencies.
 import { CertificatesModule } from './apis/certificates/certificates.module';
 import { VerifiersModule } from './apis/verifiers/verifiers.module';
 import { VerificationsModule } from './apis/verification/verifications.module';
+import { BlocksModule } from './apis/blocks/blocks.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { VerificationsModule } from './apis/verification/verifications.module';
     VerificationsModule,
     DegreesModule,
     IssuingAgenciesModule,
+    BlocksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

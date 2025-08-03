@@ -126,15 +126,17 @@ export class IssuingAgenciesService {
 
     // Kiểm tra email và tên đã tồn tại chưa
     const existingAgencyByEmail = await this.findOne({
-      filter: { email: email.toLowerCase() }
+      filter: { email: email.toLowerCase() },
     });
 
     if (existingAgencyByEmail) {
-      throw new ForbiddenException('Email đã được sử dụng bởi cơ sở cấp bằng khác');
+      throw new ForbiddenException(
+        'Email đã được sử dụng bởi cơ sở cấp bằng khác',
+      );
     }
 
     const existingAgencyByName = await this.findOne({
-      filter: { name: name.trim() }
+      filter: { name: name.trim() },
     });
 
     if (existingAgencyByName) {
@@ -186,18 +188,20 @@ export class IssuingAgenciesService {
     // Kiểm tra email trùng lặp (nếu có thay đổi email)
     if (email && email.toLowerCase() !== currentAgency.email) {
       const existingAgencyByEmail = await this.findOne({
-        filter: { email: email.toLowerCase(), _id: { $ne: id } }
+        filter: { email: email.toLowerCase(), _id: { $ne: id } },
       });
 
       if (existingAgencyByEmail) {
-        throw new ForbiddenException('Email đã được sử dụng bởi cơ sở cấp bằng khác');
+        throw new ForbiddenException(
+          'Email đã được sử dụng bởi cơ sở cấp bằng khác',
+        );
       }
     }
 
     // Kiểm tra tên trùng lặp (nếu có thay đổi tên)
     if (name && name.trim() !== currentAgency.name) {
       const existingAgencyByName = await this.findOne({
-        filter: { name: name.trim(), _id: { $ne: id } }
+        filter: { name: name.trim(), _id: { $ne: id } },
       });
 
       if (existingAgencyByName) {
@@ -256,7 +260,7 @@ export class IssuingAgenciesService {
       isUniversity?: boolean;
       isDeleted: boolean;
     } = {
-      isDeleted: false
+      isDeleted: false,
     };
     let sort = {};
     const pagination = paginationHelper(page, limit);

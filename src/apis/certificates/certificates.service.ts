@@ -27,6 +27,7 @@ import { FindCertificateByIdParamDto } from './dto/find-certificate-by-id.dto';
 import { Role } from '../roles/schemas/role.schema';
 import { FindCertificateByCertificateHashParamDto } from './dto/find-certificate-by-certificate-hash.dto';
 import { IssuingAgenciesService } from '../issuing-agencies/issuing-agencies.service';
+import { BlocksService } from '../blocks/blocks.service';
 
 @Injectable()
 export class CertificatesService {
@@ -37,6 +38,7 @@ export class CertificatesService {
     private readonly certificateModel: mongoose.Model<Certificate>,
     private readonly usersService: UsersService,
     private readonly issuingAgenciesService: IssuingAgenciesService,
+    private readonly blocksService: BlocksService,
   ) {}
 
   async create({ doc }: { doc: Certificate }) {
@@ -161,7 +163,18 @@ export class CertificatesService {
     if (studentEmail !== undefined) updateFields.studentEmail = studentEmail;
     if (issuerID !== undefined) updateFields.issuerID = issuerID;
 
-    const certificateExists = await this.findOneAndUpdate({
+    const certificateExists = await this.findOne({ filter: { _id: id } });
+    if (!certificateExists) {
+      throw new NotFoundException('Certificate id not found');
+    }
+
+    const certificateHash = this.jwtService.sign(
+      { certificateId: id },
+      { privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
+    );
+    updateFields.certificateHash = certificateHash;
+
+    const newCertificate = await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
         $set: updateFields,
@@ -170,11 +183,18 @@ export class CertificatesService {
         },
       },
     });
-    if (!certificateExists) {
-      throw new NotFoundException('Certificate id not found');
-    }
 
-    return certificateExists;
+    const index = await this.blocksService.getNextBlockIndex();
+    await this.blocksService.create({
+      doc: {
+        index,
+        previousHash: certificateExists.certificateHash,
+        currentHash: certificateHash,
+        data: { collection: 'certificates', collectionId: id, userId },
+      },
+    });
+
+    return newCertificate;
   }
 
   async deleteCertificate(user: LoginDto, param: DeleteCertificateParamDto) {
