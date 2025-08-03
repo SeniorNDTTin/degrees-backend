@@ -2,6 +2,8 @@ import mongoose, { RootFilterQuery } from 'mongoose';
 
 import {
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -24,6 +26,8 @@ import { DeleteDegreeParamDto } from './dto/delete-degree.dto';
 import { FindDegreeByIdParamDto } from './dto/find-degree-by-id.dto';
 import { FindDegreeByDegreeHashParamDto } from './dto/find-degree-by-degree-hash.dto';
 import { IssuingAgenciesService } from '../issuing-agencies/issuing-agencies.service';
+import { BlocksService } from '../blocks/blocks.service';
+import { Verification } from '../verification/schemas/verification.schema';
 
 @Injectable()
 export class DegreesService {
@@ -34,6 +38,10 @@ export class DegreesService {
     @InjectModel(Degree.name)
     private readonly degreeModel: mongoose.Model<Degree>,
     private readonly issuingAgenciesService: IssuingAgenciesService,
+    private readonly blocksService: BlocksService,
+
+    @InjectModel(Verification.name)
+    private readonly verificationModel: mongoose.Model<Verification>,
   ) {}
 
   async create({ doc }: { doc: Partial<Degree> }) {
@@ -159,21 +167,38 @@ export class DegreesService {
 
     const { id } = param;
 
-    const degreeExists = await this.findOneAndUpdate({
+    const degreeExists = await this.findOne({ filter: { _id: id } });
+    if (!degreeExists) {
+      throw new NotFoundException('Degree id not found');
+    }
+
+    const degreeHash = this.jwtService.sign(
+      { degreeId: id },
+      { privateKey: this.configService.get<string>('ACCESS_TOKEN_SECRET') },
+    );
+
+    const newDegree = await this.findOneAndUpdate({
       filter: { _id: id },
       update: {
         ...body,
+        degreeHash,
         $push: {
           updatedBy: { userId, updatedAt: new Date() },
         },
       },
     });
 
-    if (!degreeExists) {
-      throw new NotFoundException('Degree id not found');
-    }
+    const index = await this.blocksService.getNextBlockIndex();
+    await this.blocksService.create({
+      doc: {
+        index,
+        previousHash: degreeExists.degreeHash,
+        currentHash: degreeHash,
+        data: { collection: 'degrees', collectionId: id, userId },
+      },
+    });
 
-    return degreeExists;
+    return newDegree;
   }
 
   async deleteDegree(user: LoginDto, param: DeleteDegreeParamDto) {

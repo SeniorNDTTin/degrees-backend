@@ -8,6 +8,7 @@ import { CertificatesController } from './certificates.controller';
 import { Certificate, CertificateSchema } from './schemas/certificate.schema';
 import { UsersModule } from '../users/users.module';
 import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.module';
+import { BlocksModule } from '../blocks/blocks.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { IssuingAgenciesModule } from '../issuing-agencies/issuing-agencies.modu
     ]),
 
     UsersModule,
+    BlocksModule,
     IssuingAgenciesModule,
   ],
   controllers: [CertificatesController],
