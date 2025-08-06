@@ -110,7 +110,7 @@ export class VerifiersService {
     const { userId } = user;
     await this.checkPermissions({
       userId,
-      permission: 'create-verififier',
+      permission: 'create-verifier',
     });
 
     const { verifierName, organization, verifierEmail } = body;
@@ -134,7 +134,7 @@ export class VerifiersService {
     const { userId } = user;
     await this.checkPermissions({
       userId,
-      permission: 'update-verififier',
+      permission: 'update-verifier',
     });
 
     const { id } = param;
@@ -161,7 +161,7 @@ export class VerifiersService {
     const { userId } = user;
     await this.checkPermissions({
       userId,
-      permission: 'delete-verififier',
+      permission: 'delete-verifier',
     });
 
     const { id } = param;
