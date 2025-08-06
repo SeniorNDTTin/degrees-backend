@@ -52,7 +52,10 @@ export class VerifiersController {
 
   @Delete('/delete/:id')
   @UseGuards(JwtAuthGuard)
-  async deleteVerifer(@User() user: LoginDto, param: DeleteVerifierParamDto) {
+  async deleteVerifer(
+    @User() user: LoginDto,
+    @Param() param: DeleteVerifierParamDto,
+  ) {
     return await this.verifiersService.deleteVerifier(user, param);
   }
 
