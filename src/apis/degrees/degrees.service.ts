@@ -226,12 +226,14 @@ export class DegreesService {
     const filterOptions: {
       name?: RegExp;
       description?: RegExp;
+      status?: any;
     } = {};
     let sort = {};
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { name, description, sortBy, sortOrder } = filter;
+      const { name, description, status, isVerifying, sortBy, sortOrder } =
+        filter;
 
       if (name) {
         filterOptions.name = new RegExp(name as string, 'i');
@@ -239,6 +241,13 @@ export class DegreesService {
 
       if (description) {
         filterOptions.description = new RegExp(description as string, 'i');
+      }
+
+      if (isVerifying) {
+        const a = { $in: [/^pending$/i, /^revoke$/i] };
+        filterOptions.status = a;
+      } else if (status) {
+        filterOptions.status = new RegExp(status as string, 'i');
       }
 
       sort = sortHelper(sortBy as string, sortOrder as string);

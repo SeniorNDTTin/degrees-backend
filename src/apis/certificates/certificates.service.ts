@@ -218,7 +218,7 @@ export class CertificatesService {
     const { filter, page, limit } = query;
     const filterOptions: {
       title?: RegExp;
-      status?: RegExp;
+      status?: any;
       studentEmail?: RegExp;
       issuerID?: RegExp;
     } = {};
@@ -226,15 +226,18 @@ export class CertificatesService {
     const pagination = paginationHelper(page, limit);
 
     if (filter) {
-      const { title, status, studentEmail, issuerID, sortBy, sortOrder } =
-        filter;
+      const {
+        title,
+        status,
+        studentEmail,
+        issuerID,
+        isVerifying,
+        sortBy,
+        sortOrder,
+      } = filter;
 
       if (title) {
         filterOptions.title = new RegExp(title as string, 'i');
-      }
-
-      if (status) {
-        filterOptions.status = new RegExp(status as string, 'i');
       }
 
       if (studentEmail) {
@@ -243,6 +246,13 @@ export class CertificatesService {
 
       if (issuerID) {
         filterOptions.issuerID = new RegExp(issuerID as string, 'i');
+      }
+
+      if (isVerifying) {
+        const a = { $in: [/^pending$/i, /^revoke$/i] };
+        filterOptions.status = a;
+      } else if (status) {
+        filterOptions.status = new RegExp(status as string, 'i');
       }
 
       sort = sortHelper(sortBy as string, sortOrder as string);
