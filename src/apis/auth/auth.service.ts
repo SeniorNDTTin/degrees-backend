@@ -54,14 +54,14 @@ export class AuthService {
       filter: { _id: userId },
     });
 
-    // const otp = generateOTPHelper({ length: 6 });
-    const otp = '123456';
+    const otp = generateOTPHelper({ length: 6 });
+    // const otp = '123456';
 
-    // sendMailHelper({
-    //   email: userExists?.email as string,
-    //   subject: 'Mã OTP Xác Thực Đăng Nhập',
-    //   html: `<h1>${otp}</h1>`,
-    // });
+    sendMailHelper({
+      email: userExists?.email as string,
+      subject: 'Mã OTP Xác Thực Đăng Nhập',
+      html: `<h1>${otp}</h1>`,
+    });
     await this.create({
       doc: { userId: new mongoose.Types.ObjectId(userId), otp },
     });
