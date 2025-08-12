@@ -3,14 +3,21 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './interceptors/response-mapping.interceptor';
+import benchDesCrypt from './scripts/bench-unix';
+import benchPBKDF2LowRounds from './scripts/bench-pbkdf2';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // test algorithms
-  // await benchBcrypt();
   // await benchHS256();
   // await benchRS256();
+  // await benchBcrypt();
+  // await benchHmacSha1();
+  // await benchHmacMd5();
+  // await benchRsaSha1();
+  await benchDesCrypt();
+  // await benchPBKDF2LowRounds();
 
   // cors
   app.enableCors();

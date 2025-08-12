@@ -39,7 +39,8 @@
     "passport-local": "^1.0.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "unix-crypt-td-js": "^1.1.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
